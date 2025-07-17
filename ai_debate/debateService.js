@@ -14,7 +14,7 @@ async function getOpenAIResponse(systemPrompt, history) {
       'https://api.openai.com/v1/chat/completions',
       {
         // Changed to a valid and cost-effective model
-        model: 'gpt-4o-mini', 
+        model: 'gpt-4.1-nano', 
         messages: [
           { role: 'system', content: systemPrompt },
           ...history
