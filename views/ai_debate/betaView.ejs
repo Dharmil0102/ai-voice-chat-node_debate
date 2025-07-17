@@ -1,0 +1,579 @@
+<!DOCTYPE html>
+<html lang="en"><head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>AI Debate - Beta View</title>
+   <!DOCTYPE html>
+<html lang="en">
+<head>
+ <meta charset="UTF-8">
+ <meta name="viewport" content="width=device-width, initial-scale=1.0">
+ <title>AI Debate - Beta View</title>
+<style>
+    body {
+      font-family: 'Inter', Arial, sans-serif;
+      background: linear-gradient(135deg, #181c2f 0%, #2d1a3a 100%);
+      min-height: 100vh;
+      margin: 0;
+      padding: 0;
+      overflow-x: hidden;
+      position: relative;
+      display: flex; /* Use flexbox for overall layout */
+      flex-direction: column; /* Stack items vertically */
+      align-items: center; /* Center content horizontally */
+      justify-content: center; /* Center content vertically */
+    }
+
+    /* Remove header, footer, and siri-bg-anim from these views */
+    .ai-header, .ai-footer, .siri-bg-anim {
+      display: none !important;
+    }
+
+    /* Main container for the debater card */
+    .debate-card {
+      background: rgba(30, 30, 50, 0.7);
+      border-radius: 32px;
+      box-shadow: 0 8px 48px 0 #000a, 0 0 32px #7c3aed33;
+      padding: 1.2em 1em 1em 1em;
+      margin: 2em auto; /* Adjusted margin for spacing */
+      max-width: min(600px, 95vw); /* Fluid width for mobile */
+      width: auto;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      backdrop-filter: blur(24px);
+      border: 2.5px solid #7c3aed55;
+      animation: fadeInCard 1.2s 0.2s cubic-bezier(.4,2,.6,1) backwards;
+      min-height: 340px; /* Keep minimum height consistent */
+      max-height: 80vh; /* Allow it to take more vertical space */
+      overflow: hidden;
+    }
+
+    @keyframes fadeInCard {
+      from { opacity: 0; transform: scale(0.97) translateY(30px); }
+      to { opacity: 1; transform: none; }
+    }
+
+    /* The single debater container */
+    .debater {
+      flex: 1;
+      background: rgba(40, 40, 60, 0.85);
+      border-radius: 40px;
+      box-shadow: 0 2px 24px #7c3aed22, 0 0 32px #7c3aed22;
+      padding: 1.2em;
+      min-height: 260px;
+      max-height: 100%;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      position: relative;
+      border: 2.5px solid #7c3aed55;
+      transition: box-shadow 0.3s, border 0.3s, transform 0.2s;
+      overflow: hidden;
+      width: 100%;
+    }
+
+    .debater:hover, .debater:focus-within {
+      box-shadow: 0 0 64px #a78bfa55, 0 0 128px #7c3aed33;
+      border: 3px solid #a78bfa;
+      transform: translateY(-4px) scale(1.02);
+    }
+
+    .debater.speaking {
+      box-shadow: 0 0 48px #a78bfaee, 0 0 96px #7c3aedcc;
+      border: 3px solid #a78bfa;
+    }
+
+    .debater h2 {
+      margin-bottom: 1em;
+      color: #fff;
+      letter-spacing: 0.5px;
+      font-size: 1.2em;
+      text-shadow: 0 2px 8px #7c3aed33;
+      font-weight: 600;
+    }
+
+    .debate-turn {
+      margin-bottom: 1.5em;
+      width: 100%;
+      text-align: left;
+      background: rgba(60, 60, 90, 0.85);
+      border-radius: 18px;
+      padding: 1em 1.2em;
+      position: relative;
+      box-shadow: 0 1px 8px #7c3aed22;
+      color: #fff;
+      font-size: 1.13em;
+      font-weight: 500;
+      letter-spacing: 0.2px;
+      opacity: 0;
+      word-wrap: break-word;
+      word-break: break-word;
+      white-space: normal;
+      transform: translateY(20px);
+      animation: fadeInTurn 0.7s forwards;
+      transition: background 0.3s, box-shadow 0.3s, border 0.3s;
+    }
+
+    @keyframes fadeInTurn {
+      to {
+        opacity: 1;
+        transform: none;
+      }
+    }
+
+    .avatar {
+      width: 64px;
+      height: 64px;
+      border-radius: 50%;
+      background: linear-gradient(135deg, #7c3aed 0%, #a78bfa 100%);
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      font-size: 3.2em;
+      margin-bottom: 0.7em;
+      border: 6px solid #fff2;
+      box-shadow: 0 0 32px #a78bfa88, 0 0 64px #7c3aed44;
+      color: #fff;
+      text-shadow: 0 2px 12px #7c3aed99;
+      transition: box-shadow 0.3s, border 0.3s, transform 0.2s;
+      animation: avatarPulse 2s infinite alternate;
+      position: relative;
+      overflow: visible;
+    }
+
+    .debater.speaking .avatar {
+      box-shadow: 0 0 64px #a78bfa, 0 0 128px #7c3aed;
+      border: 6px solid #a78bfa;
+      animation: avatarPulseActive 1s infinite alternate;
+    }
+
+    .avatar:hover, .avatar:focus {
+      box-shadow: 0 0 96px #a78bfa, 0 0 192px #7c3aed;
+      border: 6px solid #a78bfa;
+      transform: scale(1.08) rotate(-2deg);
+    }
+
+    .avatar::after {
+      content: '';
+      position: absolute;
+      left: 50%; top: 50%;
+      transform: translate(-50%, -50%);
+      width: 120px; height: 120px;
+      border-radius: 50%;
+      background: radial-gradient(circle, #a78bfa33 0%, transparent 70%);
+      opacity: 0.7;
+      z-index: 0;
+      pointer-events: none;
+    }
+
+    @keyframes avatarPulse {
+      0% { box-shadow: 0 0 32px #a78bfa88, 0 0 64px #7c3aed44; }
+      100% { box-shadow: 0 0 48px #a78bfa99, 0 0 96px #7c3aed55; }
+    }
+
+    @keyframes avatarPulseActive {
+      0% { box-shadow: 0 0 64px #a78bfa, 0 0 128px #7c3aed; }
+      100% { box-shadow: 0 0 96px #a78bfa, 0 0 192px #7c3aed; }
+    }
+
+    .center-loader {
+      position: absolute;
+      left: 50%;
+      top: 50%;
+      transform: translate(-50%, -50%);
+      z-index: 10;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+    }
+
+    .spinner {
+      border: 5px solid #23243a;
+      border-top: 5px solid #7c3aed;
+      border-radius: 50%;
+      width: 40px;
+      height: 40px;
+      animation: spin 1s linear infinite;
+      margin-bottom: 0.5em;
+      box-shadow: 0 0 16px #a78bfa55;
+    }
+
+    @keyframes spin { 100% { transform: rotate(360deg); } }
+
+    .loader-label {
+      color: #a78bfa;
+      font-weight: 700;
+      font-size: 1.2em;
+      text-shadow: 0 2px 8px #7c3aed33;
+      letter-spacing: 0.5px;
+    }
+
+    .debate-battle {
+      display: flex;
+      justify-content: center;
+      align-items: flex-start;
+      gap: 2em;
+      margin: 0.5em auto 0 auto;
+      max-width: 1100px;
+      position: relative;
+      width: 100%;
+      height: auto;
+    }
+
+    .debater-scroll {
+      max-height: 220px;
+      overflow-y: auto;
+      overflow-x: hidden;
+      word-wrap: break-word;
+      word-break: break-word;
+      white-space: normal;
+      width: 100%;
+      padding-right: 4px;
+
+      /* Scrollbar Styling for WebKit browsers */
+      &::-webkit-scrollbar {
+        width: 8px;
+        background: #33364c;
+        border-radius: 4px;
+      }
+
+      &::-webkit-scrollbar-thumb {
+        background: #7c3aed;
+        border-radius: 4px;
+        transition: background 0.3s ease;
+      }
+
+      &::-webkit-scrollbar-thumb:hover {
+        background: #a78bfa;
+      }
+
+      /* Scrollbar Styling for Firefox */
+      scrollbar-width: thin;
+      scrollbar-color: #7c3aed #33364c;
+    }
+    
+    .autoplay-btn {
+      padding: 0.8em 2.5em;
+      background: linear-gradient(90deg, #7c3aed 0%, #a78bfa 100%);
+      color: #fff;
+      border: none;
+      border-radius: 32px;
+      font-size: 1.15em;
+      cursor: pointer;
+      font-weight: 700;
+      box-shadow: 0 2px 16px 0 #7c3aed33, 0 1.5px 8px #0002;
+      transition: background 0.2s, box-shadow 0.2s, transform 0.1s;
+      letter-spacing: 0.5px;
+      min-width: 150px;
+      min-height: 48px;
+      display: block;
+      margin: 2em auto;
+      text-align: center;
+    }
+
+    .autoplay-btn:active {
+      transform: scale(0.97);
+    }
+
+    .autoplay-btn:disabled {
+      background: #444a;
+      cursor: not-allowed;
+      box-shadow: none;
+      opacity: 0.7;
+    }
+
+    .autoplay-btn:hover:not(:disabled) {
+      background: linear-gradient(90deg, #a78bfa 0%, #7c3aed 100%);
+      box-shadow: 0 4px 24px #a78bfa55, 0 2px 12px #7c3aed33;
+    }
+
+    /* Media Queries for Responsiveness */
+    @media (max-width: 768px) {
+      .debate-card {
+        margin: 1em auto;
+        padding: 1em;
+        max-width: 95vw;
+        min-height: unset;
+        max-height: unset;
+      }
+
+      .debater {
+        padding: 1em;
+        min-height: 100px;
+        max-height: unset;
+        border-radius: 24px;
+      }
+
+      .debater h2 {
+        font-size: 1em;
+        margin-bottom: 0.5em;
+      }
+
+      .avatar, .avatar-gif {
+        width: 48px;
+        height: 48px;
+        font-size: 2.5em;
+        margin-bottom: 0.5em;
+      }
+
+      .debate-turn {
+        font-size: 0.9em;
+        padding: 0.8em 1em;
+        margin-bottom: 1em;
+      }
+
+      .debater-scroll {
+        max-height: 120px;
+      }
+
+      .autoplay-btn {
+        width: 90%;
+        font-size: 1em;
+        padding: 0.7em 1.5em;
+        min-width: unset;
+      }
+
+      .center-loader {
+        transform: translate(-50%, -50%) scale(0.8);
+      }
+      .loader-label {
+        font-size: 1em;
+      }
+    }
+
+    @media (max-width: 480px) {
+      .debate-card {
+        margin: 0.5em auto;
+        padding: 0.8em;
+      }
+      .debater {
+        padding: 0.8em;
+      }
+      .debater-scroll {
+        max-height: 100px;
+      }
+      .autoplay-btn {
+        font-size: 0.9em;
+        padding: 0.6em 1em;
+      }
+    }
+  </style>
+<body>
+  <div class="debate-card">
+    <div class="debate-battle">
+      <div class="center-loader" id="centerLoader" style="display:none;">
+        <div class="spinner"></div>
+        <div class="loader-label" id="loaderLabel">AI is thinking... <span class="loader-dots"><span class="loader-dot"></span><span class="loader-dot"></span><span class="loader-dot"></span></span></div>
+      </div>
+      <div class="debater" id="betaDebater">
+        <div class="avatar" title="AI Beta" id="betaAvatar">
+          <span class="avatar-icon" id="betaAvatarIcon">🧑‍💼</span>
+          <img src="/images/voice_start.gif" id="betaAvatarGif" class="avatar-gif" alt="Beta speaking" style="display:none;width:64px;height:64px;border-radius:50%;object-fit:cover;" />
+        </div>
+        <h2 id="betaTitle">Beta (Con)</h2>
+        <div id="betaTurns" class="debater-scroll"></div>
+      </div>
+    </div>
+    <div id="reflectionTurns"></div>
+  </div>
+    
+  <button class="autoplay-btn" id="startDebateBtn">Join Debate</button>
+  <script src="/socket.io/socket.io.js"></script>
+  <script>
+  let selectedVoice = null;
+let voicesLoaded = false;
+
+// Constants
+const isBetaView = true;
+const myName = 'Beta';
+const myTurnsContainer = document.getElementById('betaTurns');
+const startBtn = document.getElementById('startDebateBtn');
+const sessionId = new URLSearchParams(window.location.search).get('session');
+
+// Socket setup
+const socket = io();
+
+// Voice loading
+function loadVoicesAndAssign() {
+  const voices = speechSynthesis.getVoices();
+
+  if (voices.length > 0) {
+    voicesLoaded = true;
+
+    const femaleVoices = voices.filter(v =>
+      /female|zira|samantha|karen|victoria|sofia|susan|eva/.test(v.name.toLowerCase())
+    );
+
+    selectedVoice = femaleVoices.length > 0
+      ? femaleVoices[Math.floor(Math.random() * femaleVoices.length)]
+      : voices[Math.floor(Math.random() * voices.length)];
+
+    console.log('🎤 Assigned Beta voice:', selectedVoice.name);
+  } else {
+    speechSynthesis.onvoiceschanged = loadVoicesAndAssign;
+  }
+}
+
+// Start button
+startBtn.addEventListener('click', () => {
+  if ('speechSynthesis' in window && !speechSynthesis.speaking) {
+    speechSynthesis.speak(new SpeechSynthesisUtterance(''));
+  }
+
+  if (!voicesLoaded) {
+    loadVoicesAndAssign();
+  }
+  
+  socket.emit('joinSession', sessionId);
+  console.log('🔵 Emitting BetaReady for session:', sessionId);
+  socket.emit('BetaReady', sessionId);
+  console.log('✅ Beta is ready after Join');
+
+  startBtn.disabled = true;
+  startBtn.textContent = 'Joined';
+  startBtn.style.opacity = 0.5;
+  startBtn.style.display = 'none';
+});
+
+// Listen to messages from live
+window.addEventListener('message', (event) => {
+  const { type, text, betaName } = event.data;
+  if (type === 'betaTurn') {
+    console.log('📨 Received betaTurn via postMessage:', text);
+    playTurn(text, betaName || myName);
+  }
+});
+
+// Restore past turns
+socket.on('sessionState', (data) => {
+  if (data.history && data.history.length > 0) {
+    data.history.forEach((h, i) => {
+      const isMyTurn = (i % 2 === 1);
+      if (isMyTurn) {
+        const div = document.createElement('div');
+        div.className = 'debate-turn';
+        div.innerHTML = `<strong>${myName}:</strong> ${h.content}`;
+        myTurnsContainer?.appendChild(div);
+      }
+    });
+  }
+});
+
+// Listen for session updates
+socket.on('sessionUpdated', (data) => {
+  const last = data.history?.[data.history.length - 1];
+  const lastIndex = data.history.length - 1;
+
+  const isMyTurn = (lastIndex % 2 === 1);
+  if (isMyTurn && last?.content) {
+    const alreadySpoken = Array.from(myTurnsContainer.children).some(div =>
+      div.textContent.includes(last.content)
+    );
+    if (!alreadySpoken) {
+      playTurn(last.content, myName);
+    }
+  }
+});
+
+// Voice + animation playback
+function playTurn(text, speakerName) {
+  const container = document.getElementById('betaTurns');
+  const debater = document.getElementById('betaDebater');
+  const avatarIcon = document.getElementById('betaAvatarIcon');
+  const avatarGif = document.getElementById('betaAvatarGif');
+
+  const div = document.createElement('div');
+  div.className = 'debate-turn';
+  div.innerHTML = `<strong>${speakerName}:</strong> ${text}`;
+  container?.appendChild(div);
+  container.scrollTop = container.scrollHeight;
+
+  debater?.classList.add('speaking');
+  avatarIcon?.style.setProperty('display', 'none');
+  avatarGif?.style.setProperty('display', 'block');
+
+  // Speak using voice synthesis
+  if ('speechSynthesis' in window) {
+    function speakOnceReady() {
+      if (!selectedVoice) return setTimeout(speakOnceReady, 100);
+      if (speechSynthesis.speaking) return setTimeout(speakOnceReady, 100);
+
+      const utter = new SpeechSynthesisUtterance(text);
+      utter.voice = selectedVoice;
+      utter.rate = 1;
+      utter.pitch = 1;
+      utter.lang = 'en-US';
+
+      utter.onend = () => {
+        debater?.classList.remove('speaking');
+        avatarIcon?.style.setProperty('display', 'block');
+        avatarGif?.style.setProperty('display', 'none');
+        socket.emit('turnDone', { sessionId, role: 'beta' });
+      };
+
+      speechSynthesis.speak(utter);
+    }
+
+    speakOnceReady();
+  } else {
+    socket.emit('turnDone', { sessionId, role: 'beta' });
+  }
+}
+
+
+
+// window.addEventListener('message', function(event) {
+//   if (event.data.type === 'betaTurn') {
+//     const { text, betaName } = event.data;
+
+//     // UI: Show the text
+//     const div = document.createElement('div');
+//     div.className = 'debate-turn';
+//     div.innerHTML = `<strong>${betaName}:</strong> ${text}`;
+//     document.getElementById('betaTurns')?.appendChild(div);
+//     const container = document.getElementById('betaTurns');
+//     container.scrollTop = container.scrollHeight;
+
+
+//     // UI: Show Beta is speaking
+//     document.getElementById('betaDebater')?.classList.add('speaking');
+//     document.getElementById('betaAvatarIcon')?.style.setProperty('display', 'none');
+//     document.getElementById('betaAvatarGif')?.style.setProperty('display', 'block');
+
+//     // Voice
+//     if ('speechSynthesis' in window) {
+//       const utter = new SpeechSynthesisUtterance(text);
+//       utter.rate = 1;
+//       utter.pitch = 1;
+//       utter.lang = 'en-US';
+
+//       const voices = speechSynthesis.getVoices();
+//       let betaVoice = voices.find(v => v.name.toLowerCase().includes('emma'));
+//       if (!betaVoice) betaVoice = voices.find(v => v.lang === 'en-GB' && v.name.toLowerCase().includes('female'));
+//       if (!betaVoice) betaVoice = voices.find(v => v.lang.startsWith('en')) || voices[0];
+//       utter.voice = betaVoice;
+
+//       utter.onend = () => {
+//         // Reset speaking glow and GIFs
+//         document.getElementById('betaDebater')?.classList.remove('speaking');
+//         document.getElementById('betaAvatarIcon')?.style.setProperty('display', 'block');
+//         document.getElementById('betaAvatarGif')?.style.setProperty('display', 'none');
+
+//         // Notify main window
+//         if (window.opener) {
+//           window.opener.postMessage({ type: 'betaDone' }, '*');
+//         }
+//       };
+
+//       window.speechSynthesis.speak(utter);
+//     } else {
+//       if (window.opener) {
+//         window.opener.postMessage({ type: 'betaDone' }, '*');
+//       }
+//     }
+//   }
+// });
+</script>
+</body>
+</html>

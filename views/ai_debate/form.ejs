@@ -1,0 +1,21 @@
+<!DOCTYPE html>
+<html>
+<head>
+  <title>Start AI vs AI Debate</title>
+</head>
+<body>
+  <h1>Start an AI vs AI Debate</h1>
+  <form id="debateForm" style="margin-bottom:2em;">
+    <label for="topic">Debate Topic:</label>
+    <input type="text" id="topic" name="topic" required>
+    <button type="submit">Start AI Debate</button>
+  </form>
+  <script>
+    document.getElementById('debateForm').addEventListener('submit', function(e) {
+      e.preventDefault();
+      const topic = encodeURIComponent(document.getElementById('topic').value);
+      window.location.href = '/ai-debate/live?topic=' + topic;
+    });
+  </script>
+</body>
+</html> 

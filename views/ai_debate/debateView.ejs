@@ -1,0 +1,159 @@
+<!DOCTYPE html>
+<html>
+<head>
+  <title>Debate Battle</title>
+  <style>
+    body { font-family: Arial, sans-serif; background: #f6f6fa; margin: 0; padding: 0; }
+    h1 { text-align: center; margin-top: 1em; }
+    .debate-battle {
+      display: flex;
+      justify-content: center;
+      align-items: flex-start;
+      gap: 2em;
+      margin: 2em auto;
+      max-width: 900px;
+    }
+    .debater {
+      flex: 1;
+      background: #fff;
+      border-radius: 10px;
+      box-shadow: 0 2px 8px rgba(0,0,0,0.07);
+      padding: 1.5em;
+      min-height: 300px;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+    }
+    .debater h2 {
+      margin-bottom: 1em;
+      color: #7c3aed;
+    }
+    .debate-turn {
+      margin-bottom: 1.5em;
+      width: 100%;
+      text-align: left;
+      background: #f3f0ff;
+      border-radius: 6px;
+      padding: 0.8em 1em;
+      position: relative;
+    }
+    .speak-btn {
+      position: absolute;
+      right: 1em;
+      top: 1em;
+      background: #7c3aed;
+      color: #fff;
+      border: none;
+      border-radius: 4px;
+      padding: 0.2em 0.7em;
+      cursor: pointer;
+      font-size: 0.95em;
+    }
+    .autoplay-btn {
+      display: block;
+      margin: 1em auto 0 auto;
+      padding: 0.7em 2em;
+      background: #7c3aed;
+      color: #fff;
+      border: none;
+      border-radius: 6px;
+      font-size: 1.1em;
+      cursor: pointer;
+    }
+    .autoplay-btn:disabled {
+      background: #bdbdbd;
+      cursor: not-allowed;
+    }
+    .debate-announcement {
+      text-align: center;
+      font-size: 1.3em;
+      margin-top: 0.5em;
+      color: #333;
+      font-weight: bold;
+    }
+    .debate-status {
+      text-align: center;
+      font-size: 1.1em;
+      margin: 1em 0 0.5em 0;
+      color: #7c3aed;
+      min-height: 1.5em;
+      font-weight: 500;
+    }
+  </style>
+</head>
+<body>
+  <h1>Debate Battle: <%= topic %></h1>
+  <div class="debate-announcement">Debate between AI VS AI</div>
+  <div class="debate-status" id="debateStatus"></div>
+  <button class="autoplay-btn" id="startDebateBtn">Start Debate</button>
+  <div class="debate-battle">
+    <div class="debater">
+      <h2>AI Alpha (Pro)</h2>
+      <% for(let i=0; i<debate.length; i+=2) { %>
+        <div class="debate-turn">
+          <%= debate[i].text %>
+          <button class="speak-btn" data-text="<%- debate[i].text.replace(/"/g, '&quot;') %>" onclick="speakText(this.getAttribute('data-text'))">Speak</button>
+        </div>
+      <% } %>
+    </div>
+    <div class="debater">
+      <h2>AI Beta (Con)</h2>
+      <% for(let i=1; i<debate.length; i+=2) { %>
+        <div class="debate-turn">
+          <%= debate[i].text %>
+          <button class="speak-btn" data-text="<%- debate[i].text.replace(/"/g, '&quot;') %>" onclick="speakText(this.getAttribute('data-text'))">Speak</button>
+        </div>
+      <% } %>
+    </div>
+  </div>
+  <script>
+const debateTurns = <%= JSON.stringify(debate.map(turn => turn.text)) %>;
+const debateSpeakers = <%= JSON.stringify(debate.map(turn => turn.speaker)) %>;
+
+function speakText(text, cb) {
+  if ('speechSynthesis' in window) {
+    const utter = new SpeechSynthesisUtterance(text);
+    utter.rate = 1;
+    utter.pitch = 1;
+    utter.lang = 'en-US';
+    if (cb) utter.onend = cb;
+    window.speechSynthesis.speak(utter);
+  } else {
+    alert('Sorry, your browser does not support speech synthesis.');
+    if (cb) cb();
+  }
+}
+
+function disableSpeakButtons(disabled) {
+  document.querySelectorAll('.speak-btn').forEach(btn => btn.disabled = disabled);
+}
+
+function setDebateStatus(text) {
+  document.getElementById('debateStatus').textContent = text;
+}
+
+function autoplayDebate() {
+  disableSpeakButtons(true);
+  let idx = 0;
+  function next() {
+    if (idx < debateTurns.length) {
+      setDebateStatus(debateSpeakers[idx] + ' is speaking...');
+      speakText(debateTurns[idx], () => {
+        idx++;
+        setTimeout(next, 500);
+      });
+    } else {
+      setDebateStatus('');
+      disableSpeakButtons(false);
+    }
+  }
+  next();
+}
+
+document.getElementById('startDebateBtn').addEventListener('click', function() {
+  this.disabled = true;
+  autoplayDebate();
+});
+  </script>
+</body>
+</html> 

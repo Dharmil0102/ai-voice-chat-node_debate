@@ -1,0 +1,1603 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <title>GroBattle</title>
+    <meta name="description" content="A beautiful, interactive AI debate tool. Enter your own debater names and topic, and watch two AI agents battle it out in real time.">
+    <link rel="icon" type="image/png" href="https://cdn.jsdelivr.net/gh/twitter/twemoji@14.0.2/assets/72x72/1f916.png">
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;600;700&display=swap" rel="stylesheet">
+    <style>
+        .subtopic-btn {
+            padding: 0.8em 1.2em;
+            background: linear-gradient(90deg, #7c3aed 0%, #a78bfa 100%);
+            color: #fff;
+            border: none;
+            border-radius: 32px;
+            font-size: 1.05em;
+            font-weight: 600;
+            cursor: pointer;
+            box-shadow: 0 2px 16px 0 #7c3aed33, 0 1.5px 8px #0002;
+            transition: background 0.2s, box-shadow 0.2s, transform 0.1s;
+            letter-spacing: 0.5px;
+        }
+
+        .subtopic-btn:hover {
+            background: linear-gradient(90deg, #a78bfa 0%, #7c3aed 100%);
+            box-shadow: 0 4px 24px #a78bfa55, 0 2px 12px #7c3aed33;
+        }
+
+        .subtopic-btn:active {
+            transform: scale(0.97);
+        }
+
+
+        body {
+            font-family: 'Inter', Arial, sans-serif;
+            background: linear-gradient(135deg, #181c2f 0%, #2d1a3a 100%);
+            min-height: 100vh;
+            margin: 0;
+            padding: 0;
+            overflow-x: hidden;
+            position: relative;
+        }
+        #betaDebater {
+            display: none !important;
+        }
+        #alphaDebater {
+            display: none !important;
+        }
+        .siri-bg-anim {
+            position: fixed;
+            left: 0; bottom: 0; width: 100vw; height: 220px;
+            z-index: 0;
+            pointer-events: none;
+            opacity: 0.7;
+        }
+        .ai-header {
+            position: fixed;
+            top: 0;
+            left: 0;
+            height: 64px;
+            width: 100vw;
+            display: flex;
+            align-items: center;
+            gap: 0.7em;
+            padding: 0 2em;
+            background: rgba(30, 30, 50, 0.7);
+            backdrop-filter: blur(8px);
+            z-index: 20;
+            box-shadow: 0 2px 16px #7c3aed22;
+            border-bottom: 1.5px solid #7c3aed33;
+        }
+        .ai-header-icon {
+            font-size: 2.1em;
+            filter: drop-shadow(0 0 8px #a78bfa88);
+            margin-right: 0.2em;
+        }
+        .ai-header-title {
+            font-size: 1.25em;
+            font-weight: 700;
+            color: #a78bfa;
+            letter-spacing: 1px;
+            text-shadow: 0 2px 8px #7c3aed55;
+        }
+        .ai-container {
+            margin-top: 56px;
+            animation: fadeInMain 1.1s cubic-bezier(.4,2,.6,1);
+        }
+        @keyframes fadeInMain {
+            from { opacity: 0; transform: translateY(40px); }
+            to { opacity: 1; transform: none; }
+        }
+        .topic-form {
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            gap: 1em;
+            margin: 0 auto 0.7em auto;
+            max-width: 600px;
+            border-radius: 32px;
+            padding: 1.2em 2em;
+            backdrop-filter: blur(16px);
+        }
+        .topic-form input[type="text"] {
+            flex: 1;
+            padding: 0.7em 1.2em;
+            font-size: 1.2em;
+            border-radius: 32px;
+            border: none;
+            outline: none;
+            background: #23243a;
+            color: #fff;
+            box-shadow: 0 1px 4px #0002;
+            font-weight: 500;
+        }
+        .topic-form button, .autoplay-btn, .stop-btn, #resetDebateBtn {
+            padding: 0.8em 2.5em;
+            background: linear-gradient(90deg, #7c3aed 0%, #a78bfa 100%);
+            color: #fff;
+            border: none;
+            border-radius: 32px;
+            font-size: 1.15em;
+            cursor: pointer;
+            font-weight: 700;
+            box-shadow: 0 2px 16px 0 #7c3aed33, 0 1.5px 8px #0002;
+            transition: background 0.2s, box-shadow 0.2s, transform 0.1s;
+            letter-spacing: 0.5px;
+            min-width: 150px;
+            min-height: 48px;
+            display: inline-block;
+            margin: 0 0.2em;
+        }
+        .topic-form button:active, .autoplay-btn:active, .stop-btn:active, #resetDebateBtn:active {
+            transform: scale(0.97);
+        }
+        .topic-form button:disabled, .autoplay-btn:disabled, .stop-btn:disabled, #resetDebateBtn:disabled {
+            background: #444a;
+            cursor: not-allowed;
+            box-shadow: none;
+            opacity: 0.7;
+        }
+        .topic-form button:hover:not(:disabled), .autoplay-btn:hover:not(:disabled), .stop-btn:hover:not(:disabled),  #resetDebateBtn:hover:not(:disabled) {
+            background: linear-gradient(90deg, #a78bfa 0%, #7c3aed 100%);
+            box-shadow: 0 4px 24px #a78bfa55, 0 2px 12px #7c3aed33;
+        }
+        #debateTitle {
+            text-align: center;
+            margin: 0.5em 0 0.2em 0;
+            color: #fff;
+            text-shadow: 0 2px 16px #7c3aed99;
+            font-size: 2.3em;
+            letter-spacing: 1.5px;
+            font-weight: 700;
+        }
+        .debate-announcement {
+            text-align: center;
+            font-size: 1.2em;
+            margin-top: 0.2em;
+            color: #bdbdfc;
+            font-weight: 500;
+            letter-spacing: 0.5px;
+            text-shadow: 0 2px 8px #7c3aed55;
+        }
+        .debate-status {
+            text-align: center;
+            font-size: 1.2em;
+            margin: 1em 0 0.5em 0;
+            color: #a78bfa;
+            min-height: 1.5em;
+            font-weight: 600;
+            text-shadow: 0 2px 8px #7c3aed33;
+            letter-spacing: 0.5px;
+        }
+        .center-controls {
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            gap: 1em;
+            margin-bottom: 0.7em;
+        }
+        .debate-card {
+            background: rgba(30, 30, 50, 0.7);
+            border-radius: 32px;
+            box-shadow: 0 8px 48px 0 #000a, 0 0 32px #7c3aed33;
+            padding: 1.2em 1em 1em 1em;
+            margin: 0 auto;
+            max-width: min(1200px, 98vw, max-content);
+            min-width: 320px;
+            width: auto;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            backdrop-filter: blur(24px);
+            border: 2.5px solid #7c3aed55;
+            animation: fadeInCard 1.2s 0.2s cubic-bezier(.4,2,.6,1) backwards;
+            min-height: 340px;
+            max-height: 68vh;
+            overflow: hidden;
+        }
+        @keyframes fadeInCard {
+            from { opacity: 0; transform: scale(0.97) translateY(30px); }
+            to { opacity: 1; transform: none; }
+        }
+        .debate-battle {
+            display: flex;
+            justify-content: center;
+            align-items: flex-start;
+            gap: 2em;
+            margin: 0.5em auto 0 auto;
+            max-width: 1100px;
+            position: relative;
+            width: 100%;
+            height: 340px;
+        }
+        .debater {
+            flex: 1;
+            background: rgba(40, 40, 60, 0.85);
+            border-radius: 40px;
+            box-shadow: 0 2px 24px #7c3aed22, 0 0 32px #7c3aed22;
+            padding: 1.2em 1.2em 1.2em 1.2em;
+            min-height: 260px;
+            max-height: 340px;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            position: relative;
+            border: 2.5px solid #7c3aed55;
+            transition: box-shadow 0.3s, border 0.3s, transform 0.2s;
+            overflow: hidden;
+        }
+        .debater:hover, .debater:focus-within {
+            box-shadow: 0 0 64px #a78bfa55, 0 0 128px #7c3aed33;
+            border: 3px solid #a78bfa;
+            transform: translateY(-4px) scale(1.02);
+        }
+        .debater.speaking {
+            box-shadow: 0 0 48px #a78bfaee, 0 0 96px #7c3aedcc;
+            border: 3px solid #a78bfa;
+        }
+        .debater h2 {
+            margin-bottom: 1em;
+            color: #fff;
+            letter-spacing: 0.5px;
+            font-size: 1.2em;
+            text-shadow: 0 2px 8px #7c3aed33;
+            font-weight: 600;
+        }
+        .debate-turn {
+            margin-bottom: 1.5em;
+            width: 100%;
+            text-align: left;
+            background: rgba(60, 60, 90, 0.85);
+            border-radius: 18px;
+            padding: 1em 1.2em;
+            position: relative;
+            box-shadow: 0 1px 8px #7c3aed22;
+            color: #fff;
+            font-size: 1.13em;
+            font-weight: 500;
+            letter-spacing: 0.2px;
+            opacity: 0;
+            transform: translateY(20px);
+            animation: fadeInTurn 0.7s forwards;
+            transition: background 0.3s, box-shadow 0.3s, border 0.3s;
+        }
+        @keyframes fadeInTurn {
+            to {
+                opacity: 1;
+                transform: none;
+            }
+        }
+        .avatar {
+            width: 64px;
+            height: 64px;
+            border-radius: 50%;
+            background: linear-gradient(135deg, #7c3aed 0%, #a78bfa 100%);
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 3.2em;
+            margin-bottom: 0.7em;
+            border: 6px solid #fff2;
+            box-shadow: 0 0 32px #a78bfa88, 0 0 64px #7c3aed44;
+            color: #fff;
+            text-shadow: 0 2px 12px #7c3aed99;
+            transition: box-shadow 0.3s, border 0.3s, transform 0.2s;
+            animation: avatarPulse 2s infinite alternate;
+            position: relative;
+            overflow: visible;
+        }
+        .debater.speaking .avatar {
+            box-shadow: 0 0 64px #a78bfa, 0 0 128px #7c3aed;
+            border: 6px solid #a78bfa;
+            animation: avatarPulseActive 1s infinite alternate;
+        }
+        .avatar:hover, .avatar:focus {
+            box-shadow: 0 0 96px #a78bfa, 0 0 192px #7c3aed;
+            border: 6px solid #a78bfa;
+            transform: scale(1.08) rotate(-2deg);
+        }
+        .avatar::after {
+            content: '';
+            position: absolute;
+            left: 50%; top: 50%;
+            transform: translate(-50%, -50%);
+            width: 120px; height: 120px;
+            border-radius: 50%;
+            background: radial-gradient(circle, #a78bfa33 0%, transparent 70%);
+            opacity: 0.7;
+            z-index: 0;
+            pointer-events: none;
+        }
+        @keyframes avatarPulse {
+            0% { box-shadow: 0 0 32px #a78bfa88, 0 0 64px #7c3aed44; }
+            100% { box-shadow: 0 0 48px #a78bfa99, 0 0 96px #7c3aed55; }
+        }
+        @keyframes avatarPulseActive {
+            0% { box-shadow: 0 0 64px #a78bfa, 0 0 128px #7c3aed; }
+            100% { box-shadow: 0 0 96px #a78bfa, 0 0 192px #7c3aed; }
+        }
+        .center-loader {
+            position: absolute;
+            left: 50%;
+            top: 50%;
+            transform: translate(-50%, -50%);
+            z-index: 10;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+        }
+        .spinner {
+            border: 5px solid #23243a;
+            border-top: 5px solid #7c3aed;
+            border-radius: 50%;
+            width: 40px;
+            height: 40px;
+            animation: spin 1s linear infinite;
+            margin-bottom: 0.5em;
+            box-shadow: 0 0 16px #a78bfa55;
+        }
+        @keyframes spin { 100% { transform: rotate(360deg); } }
+        .loader-label {
+            color: #a78bfa;
+            font-weight: 700;
+            font-size: 1.2em;
+            text-shadow: 0 2px 8px #7c3aed33;
+            letter-spacing: 0.5px;
+        }
+        .winner-box {
+            text-align: center;
+            margin-top: 1em;
+            font-size: 1.5em;
+            color: #10b981;
+            font-weight: bold;
+            text-shadow: 0 2px 8px #10b98133;
+            letter-spacing: 0.5px;
+            background: rgba(16, 185, 129, 0.08);
+            border-radius: 18px;
+            padding: 1.1em 2em;
+            max-width: 420px;
+            margin-left: auto;
+            margin-right: auto;
+            word-break: break-word;
+            box-shadow: 0 2px 16px #10b98122;
+            line-height: 1.4;
+        }
+        @keyframes popWinner {
+            0% { opacity: 0; transform: scale(0.7); }
+            70% { opacity: 1; transform: scale(1.1); }
+            100% { opacity: 1; transform: scale(1); }
+        }
+        @media (max-width: 600px) {
+            .winner-box {
+                font-size: 1.1em;
+                padding: 0.8em 0.7em;
+                max-width: 98vw;
+            }
+        }
+        .confetti {
+            position: absolute;
+            left: 50%;
+            top: 0;
+            width: 100%;
+            height: 0;
+            pointer-events: none;
+            z-index: 100;
+        }
+        @media (max-width: 900px) {
+            .debate-battle { flex-direction: column; gap: 0.7em; height: 340px; }
+            .debate-card { padding: 0.7em 0.2em; max-height: 80vh; }
+            .debater { border-radius: 24px; min-height: 120px; max-height: 160px; }
+            .debater-scroll { max-height: 60px; }
+            .avatar, .avatar-gif { width: 48px; height: 48px; }
+        }
+        @media (max-width: 600px) {
+            .debate-card { max-height: 92vh; }
+            .debate-battle { height: 220px; }
+            .debater { max-height: 110px; }
+            .debater-scroll { max-height: 36px; }
+        }
+        .ai-footer {
+            width: 100vw;
+            text-align: center;
+            padding: 1.2em 0 1.2em 0;
+            color: #bdbdfc;
+            font-size: 1.08em;
+            font-weight: 500;
+            letter-spacing: 0.5px;
+            background: rgba(30, 30, 50, 0.7);
+            backdrop-filter: blur(8px);
+            position: fixed;
+            left: 0;
+            bottom: 0;
+            z-index: 10;
+            border-top: 1.5px solid #7c3aed55;
+            box-shadow: 0 -2px 16px #7c3aed22;
+        }
+        .onboarding-modal {
+            position: fixed;
+            top: 0; left: 0; width: 100vw; height: 100vh;
+            background: rgba(30,30,50,0.85);
+            z-index: 100;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            transition: opacity 0.3s;
+        }
+        .onboarding-content {
+            background: rgba(255,255,255,0.12);
+            border-radius: 24px;
+            box-shadow: 0 8px 32px #7c3aed33;
+            padding: 2.5em 2.5em 2em 2.5em;
+            text-align: center;
+            color: #fff;
+            max-width: 400px;
+            font-size: 1.15em;
+            backdrop-filter: blur(16px);
+            border: 2px solid #a78bfa55;
+        }
+        .onboarding-content h2 {
+            margin-top: 0;
+            color: #a78bfa;
+            font-size: 1.4em;
+            font-weight: 700;
+        }
+        .onboarding-content button {
+            margin-top: 2em;
+            padding: 0.7em 2.5em;
+            background: linear-gradient(90deg, #7c3aed 0%, #a78bfa 100%);
+            color: #fff;
+            border: none;
+            border-radius: 32px;
+            font-size: 1.1em;
+            cursor: pointer;
+            font-weight: 700;
+            box-shadow: 0 2px 16px 0 #7c3aed33, 0 1.5px 8px #0002;
+            transition: background 0.2s, box-shadow 0.2s, transform 0.1s;
+            letter-spacing: 0.5px;
+            min-width: 150px;
+            min-height: 48px;
+            display: inline-block;
+        }
+        .onboarding-content button:hover {
+            background: linear-gradient(90deg, #a78bfa 0%, #7c3aed 100%);
+            box-shadow: 0 4px 24px #a78bfa55, 0 2px 12px #7c3aed33;
+        }
+        .onboarding-content button:active, .onboarding-content button:focus {
+            outline: 2px solid #a78bfa;
+            outline-offset: 2px;
+        }
+        .round-indicator {
+            text-align: center;
+            color: #bdbdfc;
+            font-size: 1.15em;
+            font-weight: 600;
+            margin-bottom: 0.2em;
+            letter-spacing: 0.5px;
+            text-shadow: 0 2px 8px #7c3aed33;
+        }
+        .debater-scroll {
+            max-height: 220px;
+            overflow-y: auto;
+            width: 100%;
+            padding-right: 4px;
+        }
+        .reflection-turn {
+            background: linear-gradient(90deg, #a78bfa33 0%, #7c3aed22 100%);
+            border: 2px dashed #a78bfa;
+            color: #a78bfa;
+            font-style: italic;
+            font-size: 1.08em;
+            margin-top: 1.5em;
+            margin-bottom: 0.5em;
+            padding: 1em 1.2em;
+            border-radius: 18px;
+            box-shadow: 0 1px 8px #7c3aed22;
+            text-align: center;
+        }
+        .loader-dots {
+            display: inline-block;
+            vertical-align: middle;
+            margin-left: 0.5em;
+        }
+        .loader-dot {
+            display: inline-block;
+            width: 10px;
+            height: 10px;
+            margin: 0 2px;
+            background: #a78bfa;
+            border-radius: 50%;
+            opacity: 0.7;
+            animation: loaderDotAnim 1.2s infinite both;
+        }
+        .loader-dot:nth-child(2) { animation-delay: 0.2s; }
+        .loader-dot:nth-child(3) { animation-delay: 0.4s; }
+        @keyframes loaderDotAnim {
+            0%, 80%, 100% { opacity: 0.7; transform: scale(1); }
+            40% { opacity: 1; transform: scale(1.3); }
+        }
+        .ai-description {
+            width: 100vw;
+            text-align: center;
+            margin-top: 80px;
+            margin-bottom: 0.7em;
+            background: none;
+            font-size: 1.5em;
+            font-weight: 500;
+            letter-spacing: 1px;
+            line-height: 1.1;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+        }
+        .ai-description-title {
+            background: linear-gradient(90deg, #a78bfa 0%, #7c3aed 100%);
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
+            background-clip: text;
+            text-fill-color: transparent;
+            font-size: 1.5em;
+            font-weight: 600;
+            letter-spacing: 1px;
+            text-shadow: 0 1px 8px #7c3aed22;
+            margin-bottom: 0.1em;
+        }
+        .ai-description-divider {
+            width: 40px;
+            height: 2px;
+            background: linear-gradient(90deg, #a78bfa 0%, #7c3aed 100%);
+            border-radius: 2px;
+            margin: 0.3em auto 0.4em auto;
+            opacity: 0.5;
+        }
+        .ai-description-sub {
+            display: block;
+            font-size: 1em;
+            font-weight: 400;
+            color: #bdbdfc;
+            font-style: italic;
+            margin-top: 0.1em;
+            letter-spacing: 0.1px;
+            text-shadow: 0 1px 4px #7c3aed11;
+            max-width: 480px;
+            margin-left: auto;
+            margin-right: auto;
+            line-height: 1.3;
+        }
+        .debate-progress-bar-container {
+            position: fixed;
+            left: 0;
+            bottom: 64px;
+            width: 100vw;
+            height: 10px;
+            background: #23243a;
+            border-radius: 0;
+            box-shadow: 0 -1px 8px #7c3aed22;
+            overflow: hidden;
+            z-index: 50;
+            display: flex;
+            align-items: center;
+        }
+        .debate-progress-bar {
+            height: 100%;
+            background: linear-gradient(90deg, #a78bfa 0%, #7c3aed 100%);
+            border-radius: 8px;
+            transition: width 0.5s cubic-bezier(.4,2,.6,1);
+            box-shadow: 0 0 12px #a78bfa55;
+        }
+        .status-connected {
+            color: #10b981;
+            font-weight: bold;
+        }
+        .debater-link-box {
+            display: flex;
+            flex-direction: column;
+            gap: 1em;
+            align-items: center;
+            padding: 1.5em;
+            background: #23243a;
+            border-radius: 16px;
+            box-shadow: inset 0 0 12px #7c3aed33;
+            transition: box-shadow 0.3s;
+        }
+
+        .debater-link-box:hover {
+            box-shadow: inset 0 0 24px #a78bfa55;
+        }
+
+        .debater-link-title {
+            display: flex;
+            align-items: center;
+            gap: 0.5em;
+            font-size: 1.2em;
+            font-weight: 700;
+            color: #a78bfa;
+            text-shadow: 0 1px 8px #7c3aed55;
+            letter-spacing: 0.5px;
+        }
+
+        .debater-link-box input[type="text"] {
+            width: 100%;
+            padding: 0.7em 1em;
+            font-size: 1em;
+            border-radius: 12px;
+            border: 2px solid #7c3aed55;
+            outline: none;
+            background: #181c2f;
+            color: #fff;
+            box-shadow: 0 1px 4px #0002;
+            font-weight: 500;
+            transition: border-color 0.2s;
+        }
+
+        .debater-link-box input[type="text"]:focus {
+            border-color: #a78bfa;
+            box-shadow: 0 0 12px #a78bfa55;
+        }
+
+        .debater-link-buttons {
+            display: flex;
+            gap: 0.5em;
+        }
+
+        .debater-link-buttons button {
+            padding: 0.7em 1.5em;
+            font-size: 0.9em;
+        }
+
+        .debater-status-text {
+            font-weight: 600;
+            margin-top: 0.5em;
+            color: #e74c3c;
+            transition: color 0.3s;
+        }
+
+        .status-connected {
+            color: #2ecc71;
+        }
+        @media (max-width: 768px) {
+            #debateTitle {
+                font-size: 1.8em;
+            }
+            .topic-form {
+                flex-direction: column;
+                padding: 1.2em 1em;
+            }
+            .topic-form input[type="text"] {
+                width: 100%;
+            }
+            .topic-form button {
+                width: 100%;
+                min-width: unset;
+                font-size: 1em;
+            }
+            .center-controls {
+                flex-direction: column;
+                gap: 0.5em;
+            }
+            .center-controls button {
+                width: 90%;
+            }
+            .debater-link-box {
+                padding: 1em;
+            }
+            .debater-link-buttons {
+                flex-direction: column;
+                width: 100%;
+                gap: 0.7em;
+            }
+            .debater-link-buttons button {
+                width: 100%;
+                font-size: 0.8em;
+                padding: 0.7em;
+            }
+            #viewLinks {
+                flex-direction: column;
+                padding: 1em;
+                margin: 0.5em auto;
+            }
+            .debate-battle {
+                flex-direction: column;
+                gap: 0.7em;
+                height: auto;
+            }
+            .debater {
+                min-height: 120px;
+                max-height: 160px;
+            }
+            .debater-scroll {
+                max-height: 60px;
+            }
+            .avatar, .avatar-gif {
+                width: 48px;
+                height: 48px;
+            }
+            .debate-turn {
+                font-size: 1em;
+            }
+            .loader-label {
+                font-size: 1em;
+            }
+            .ai-footer, .ai-header {
+                padding: 0 1em;
+            }
+            .ai-header-title {
+                font-size: 1em;
+            }
+            .ai-header-icon {
+                font-size: 1.5em;
+            }
+            .ai-description-title {
+                font-size: 1.2em;
+            }
+            .ai-description-sub {
+                font-size: 0.9em;
+            }
+        }
+    </style>
+</head>
+<body>
+    <div id="welcomeBanner" style="display:none;position:fixed;top:0;left:0;width:100vw;z-index:100;background:linear-gradient(90deg,#7c3aed 0%,#a78bfa 100%);color:#fff;text-align:center;padding:1em 0;font-size:1.1em;font-weight:600;box-shadow:0 2px 16px #7c3aed33;letter-spacing:0.5px;">
+        Welcome to Debate. Experience a live, intelligent debate on any topic you choose.
+        <button id="closeWelcomeBanner" style="margin-left:1.5em;background:rgba(255,255,255,0.15);border:none;border-radius:16px;padding:0.3em 1.2em;color:#fff;font-weight:600;cursor:pointer;font-size:1em;">Dismiss</button>
+    </div>
+    <div id="welcomeGifContainer" style="display:none;position:fixed;top:24px;left:50%;transform:translateX(-50%);z-index:101;text-align:center;">
+        <img src="/images/voice_start.gif" alt="Welcome Voice Animation" style="width:90px;height:90px;border-radius:50%;box-shadow:0 2px 24px #a78bfa88;" />
+    </div>
+    <header class="ai-header">
+        <img src="/images/logo.jpg" alt="Gro Battle Logo" style="width:38px;height:38px;border-radius:50%;object-fit:cover;box-shadow:0 2px 8px #7c3aed44;margin-right:0.7em;vertical-align:middle;" />
+        <span class="ai-header-title">GroBattle</span>
+    </header>
+    <svg class="siri-bg-anim" viewBox="0 0 1440 220" fill="none" xmlns="http://www.w3.org/2000/svg">
+        <defs>
+            <linearGradient id="siriwave" x1="0" y1="0" x2="1440" y2="220" gradientUnits="userSpaceOnUse">
+                <stop stop-color="#a78bfa" stop-opacity="0.7"/>
+                <stop offset="1" stop-color="#7c3aed" stop-opacity="0.4"/>
+            </linearGradient>
+        </defs>
+        <path d="M0 180 Q 360 120 720 180 T 1440 180 V 220 H 0 Z" fill="url(#siriwave)">
+            <animate attributeName="d" dur="7s" repeatCount="indefinite"
+                values="M0 180 Q 360 120 720 180 T 1440 180 V 220 H 0 Z;
+                M0 200 Q 360 160 720 200 T 1440 200 V 220 H 0 Z;
+                M0 180 Q 360 120 720 180 T 1440 180 V 220 H 0 Z" />
+        </path>
+    </svg>
+    <div class="ai-container">
+        <div class="debate-progress-bar-container">
+            <div class="debate-progress-bar" id="debateProgressBar" style="width: 0%"></div>
+        </div>
+        <div id="topicExplanation" style="display:none;margin:0 auto 0.7em auto;max-width:700px;text-align:center;font-size:1.13em;color:#bdbdfc;background:rgba(60,60,90,0.5);border-radius:18px;padding:0.7em 1.2em;box-shadow:0 2px 12px #7c3aed22;"></div>
+        <form class="topic-form" id="topicForm">
+            <input type="text" id="alphaNameInput" placeholder="Alpha name..." required value="Alpha">
+            <input type="text" id="betaNameInput" placeholder="Beta name..." required value="Beta">
+            <input type="text" id="topicInput" placeholder="Enter debate topic..." required value="<%= topic %>">
+            <input type="number" id="roundsInput" placeholder="Rounds" min="1" max="10" value="3" required style="width: 90px; font-size: 1.1em; border-radius: 32px; border: none; outline: none; background: #23243a; color: #fff; font-weight: 500; padding: 0.7em 1.2em; text-align: center;">
+            <button type="submit">Set Topic</button>
+        </form>
+        
+        <h1 id="debateTitle">Gro Battle: <span id="alphaName">Alpha</span> vs <span id="betaName">Beta</span> — <span id="debateTopic"><%= topic %></span></h1>
+        <div class="debate-announcement"><span id="alphaName2">Alpha</span> vs <span id="betaName2">Beta</span> are battling</div>
+        <div class="debate-status" id="debateStatus"></div>
+        <div class="center-controls">
+            <button class="autoplay-btn" id="startDebateBtn">Start Debate</button>
+            <button class="stop-btn" id="stopDebateBtn" disabled>Stop Debate</button>
+            <button id="resetDebateBtn" aria-label="Reset Debate">🔄 Reset</button>
+        </div>
+        <div id="onboardingModal" class="onboarding-modal" style="display: none;">
+            <div class="onboarding-content">
+                <h2>Welcome to GroBattle!</h2>
+                <p>Enter custom names and a topic, then click <b>Start Debate</b> to watch two AI agents battle it out in real time.<br><br>Click <b>Stop Debate</b> at any time, or scroll to review previous rounds.</p>
+                <button id="closeOnboardingBtn">Got it!</button>
+            </div>
+        </div>
+        <div class="debate-card">
+            <div class="round-indicator" id="roundIndicator">Round 1 of 3</div>
+            <div class="debate-battle">
+                <div class="debater" id="alphaDebater">
+                    <div class="avatar" title="AI Alpha" id="alphaAvatar">
+                        <span class="avatar-icon" id="alphaAvatarIcon">🤖</span>
+                        <img src="/images/voice_start.gif" id="alphaAvatarGif" class="avatar-gif" alt="Alpha speaking" style="display:none;width:64px;height:64px;border-radius:50%;object-fit:cover;" />
+                    </div>
+                    <h2 id="alphaTitle">Alpha (Pro)</h2>
+                    <div id="alphaTurns" class="debater-scroll"></div>
+                </div>
+                <div class="center-loader" id="centerLoader" style="display:none;">
+                    <div class="spinner"></div>
+                    <div class="loader-label" id="loaderLabel">AI is thinking... <span class="loader-dots"><span class="loader-dot"></span><span class="loader-dot"></span><span class="loader-dot"></span></span></div>
+                </div>
+                <div class="debater" id="betaDebater">
+                    <div class="avatar" title="AI Beta" id="betaAvatar">
+                        <span class="avatar-icon" id="betaAvatarIcon">🧑‍💼</span>
+                        <img src="/images/voice_start.gif" id="betaAvatarGif" class="avatar-gif" alt="Beta speaking" style="display:none;width:64px;height:64px;border-radius:50%;object-fit:cover;" />
+                    </div>
+                    <h2 id="betaTitle">Beta (Con)</h2>
+                    <div id="betaTurns" class="debater-scroll"></div>
+                </div>
+            </div>
+            <div id="reflectionTurns"></div>
+        </div>
+        <div id="viewLinks" style="margin-top: 1rem;">
+              <div id="viewLinks" style="margin: 1rem auto; max-width: 800px; display: flex; flex-direction: column; gap: 1.5em; padding: 1.5em; background: rgba(30, 30, 50, 0.7); border-radius: 24px; border: 2px solid #7c3aed55; box-shadow: 0 4px 24px #7c3aed33, 0 2px 12px #0002; backdrop-filter: blur(16px);">
+          <div class="debater-link-box">
+              <div class="debater-link-title">
+                  <span class="avatar-icon">🤖</span>
+                  <strong>Alpha View</strong>
+              </div>
+              <input type="text" id="alphaLink" readonly />
+              <div class="debater-link-buttons">
+                  <button class="subtopic-btn copy-btn" onclick="copyLink('alpha')">Copy Link</button>
+                  <button class="subtopic-btn open-btn" onclick="openAlpha()">Open View</button>
+              </div>
+              <span id="alphaStatus" class="debater-status-text">❌ Not connected</span>
+          </div>
+          <div class="debater-link-box">
+              <div class="debater-link-title">
+                  <span class="avatar-icon">🧑‍💼</span>
+                  <strong>Beta View</strong>
+              </div>
+              <input type="text" id="betaLink" readonly />
+              <div class="debater-link-buttons">
+                  <button class="subtopic-btn copy-btn" onclick="copyLink('beta')">Copy Link</button>
+                  <button class="subtopic-btn open-btn" onclick="openBeta()">Open View</button>
+              </div>
+              <span id="betaStatus" class="debater-status-text">❌ Not connected</span>
+          </div>
+        </div>
+        <div id="subtopicModal" style="display:none;position:fixed;top:0;left:0;width:100vw;height:100vh;z-index:200;background:rgba(30,30,50,0.85);backdrop-filter:blur(8px);align-items:center;justify-content:center;">
+            <div style="background:rgba(255,255,255,0.13);border-radius:24px;box-shadow:0 8px 32px #7c3aed33;padding:2.2em 2.2em 1.7em 2.2em;text-align:center;color:#fff;max-width:420px;margin:auto;position:relative;">
+                <h3 style="font-size:1.4em;font-weight:700;color:#a78bfa;margin-bottom:1em;text-shadow:0 2px 8px #7c3aed55;">Choose a Subtopic</h3>
+                <div id="subtopicList" style="display:flex;flex-direction:column;gap:0.8em;"></div>
+            </div>
+        </div>
+        <div class="winner-box" id="winnerBox" style="display:none;"></div>
+        <canvas class="confetti" id="confettiCanvas"></canvas>
+        <div id="winnerModal" style="display:none;position:fixed;top:0;left:0;width:100vw;height:100vh;z-index:200;background:rgba(30,30,50,0.85);backdrop-filter:blur(8px);align-items:center;justify-content:center;">
+            <div style="background:rgba(255,255,255,0.13);border-radius:24px;box-shadow:0 8px 32px #7c3aed33;padding:2.2em 2.2em 1.7em 2.2em;text-align:center;color:#fff;max-width:340px;margin:auto;position:relative;">
+                <img src='https://media.giphy.com/media/26ufnwz3wDUli7GU0/giphy.gif' alt='Confetti celebration' style='width:90px;height:90px;object-fit:contain;margin-bottom:0.5em;border-radius:18px;box-shadow:0 2px 16px #a78bfa55;'>
+                <div id="winnerModalTitle" style="font-size:1.5em;font-weight:700;color:#10b981;text-shadow:0 2px 8px #10b98133;letter-spacing:0.5px;margin-bottom:0.5em;"></div>
+                <div id="winnerModalReason" style="font-size:1.08em;color:#bdbdfc;margin-bottom:0.7em;"></div>
+                <div id="winnerModalRatings" style="font-size:1em;color:#a78bfa;margin-bottom:1.2em;"></div>
+                <button id="closeWinnerModal" style="padding:0.6em 2em;background:linear-gradient(90deg,#7c3aed 0%,#a78bfa 100%);color:#fff;border:none;border-radius:32px;font-size:1.1em;cursor:pointer;font-weight:700;box-shadow:0 2px 16px 0 #7c3aed33,0 1.5px 8px #0002;transition:background 0.2s,box-shadow 0.2s,transform 0.1s;letter-spacing:0.5px;">Close</button>
+            </div>
+        </div>
+    </div>
+    <footer class="ai-footer">Built By GroBro</footer>
+    <script src="/socket.io/socket.io.js"></script>
+    
+    <script>
+        let betaWindow = null;
+        let alphaWindow = null; 
+        let isDebatePaused = false;
+        let newTopic = null;
+        let topic = decodeURIComponent('<%= encodeURIComponent(topic) %>');
+        let alphaName = 'Alpha';
+        let betaName = 'Beta';
+        let history = [];
+        let step = 0;
+        let rounds = 3;
+        let maxSteps = 6; // 3 rounds (A, B, A, B, ...)
+        let responseTimeout = null;
+        const isModerator = !window.opener; // assumes only main tab opens Alpha/Beta views
+        const alphaTurns = document.getElementById('alphaTurns');
+        const betaTurns = document.getElementById('betaTurns');
+        const statusDiv = document.getElementById('debateStatus');
+        const startBtn = document.getElementById('startDebateBtn');
+        const stopBtn = document.getElementById('stopDebateBtn');
+        const centerLoader = document.getElementById('centerLoader');
+        const loaderLabel = document.getElementById('loaderLabel');
+        const winnerBox = document.getElementById('winnerBox');
+        const topicForm = document.getElementById('topicForm');
+        const topicInput = document.getElementById('topicInput');
+        const alphaNameInput = document.getElementById('alphaNameInput');
+        const betaNameInput = document.getElementById('betaNameInput');
+        const debateTitle = document.getElementById('debateTitle');
+        const alphaNameSpan = document.getElementById('alphaName');
+        const betaNameSpan = document.getElementById('betaName');
+        const alphaNameSpan2 = document.getElementById('alphaName2');
+        const betaNameSpan2 = document.getElementById('betaName2');
+        const debateTopicSpan = document.getElementById('debateTopic');
+        const alphaDebater = document.getElementById('alphaDebater');
+        const betaDebater = document.getElementById('betaDebater');
+        const alphaTitle = document.getElementById('alphaTitle');
+        const betaTitle = document.getElementById('betaTitle');
+        let sessionRestored = false;
+        const alphaAvatar = document.getElementById('alphaAvatar');
+        const betaAvatar = document.getElementById('betaAvatar');
+        let stopped = false;
+        const roundIndicator = document.getElementById('roundIndicator');
+        const reflectionTurns = document.getElementById('reflectionTurns');
+        // Onboarding modal logic
+        const onboardingModal = document.getElementById('onboardingModal');
+        const closeOnboardingBtn = document.getElementById('closeOnboardingBtn');
+        if (!localStorage.getItem('aiDebateOnboarded')) {
+            onboardingModal.style.display = 'flex';
+        }
+        closeOnboardingBtn.addEventListener('click', function() {
+            onboardingModal.style.display = 'none';
+            localStorage.setItem('aiDebateOnboarded', '1');
+        });
+        // document.getElementById('humanControls').style.display = 'flex';
+
+        const params = new URLSearchParams(window.location.search);
+        let sessionId;
+
+        if (params.get('session')) {
+            sessionId = params.get('session'); // reuse existing session
+        } else {
+            // Create new only after topic submission
+            sessionId = null;
+        }
+        
+        let alphaReady = false;
+        let betaReady = false;
+
+        const socket = io();
+        socket.emit('joinSession', sessionId);
+
+        // Listen for readiness updates
+        socket.on('statusUpdate', (status) => {
+            console.log('Received statusUpdate:', status);
+            alphaReady = status.alphaReady;
+            betaReady = status.betaReady;
+
+            const alphaStatusSpan = document.getElementById('alphaStatus');
+            const betaStatusSpan = document.getElementById('betaStatus');
+            
+            alphaStatusSpan.textContent = alphaReady ? '✅ Connected' : '❌ Not connected';
+            alphaStatusSpan.classList.toggle('status-connected', alphaReady);
+            alphaStatusSpan.dataset.connected = alphaReady;
+
+            betaStatusSpan.textContent = betaReady ? '✅ Connected' : '❌ Not connected';
+            betaStatusSpan.classList.toggle('status-connected', betaReady);
+            betaStatusSpan.dataset.connected = betaReady;
+            
+            // Enable the start button if both are ready
+            if (alphaReady && betaReady) {
+                startBtn.disabled = false;
+                setDebateStatus('Ready to begin! Click "Start Debate" to begin.');
+            }
+        });
+        
+        socket.on('turnDone', ({ role }) => {
+            clearTimeout(responseTimeout);
+            handleTurnComplete();
+        });
+        
+        topicForm.addEventListener('submit', async function(e) {
+          // Prevent the default form submission behavior
+          e.preventDefault();
+
+          // Check if a session ID already exists. If not, create one.
+          if (!sessionId) {
+              sessionId = crypto.randomUUID();
+              localStorage.setItem('sessionId', sessionId);
+              const newUrl = `${window.location.pathname}?session=${sessionId}`;
+              window.history.pushState({ path: newUrl }, '', newUrl);
+
+              // 🔥 CRITICAL FIX: Tell the server to join the new session room
+              socket.emit('joinSession', sessionId);
+          }
+          
+          // Now that the session ID is guaranteed to be in the URL,
+          // the rest of the logic can proceed as before.
+          const alphaViewURL = `${location.origin}/ai-debate/alphaView?session=${sessionId}`;
+          const betaViewURL = `${location.origin}/ai-debate/betaView?session=${sessionId}`;
+          document.getElementById('alphaLink').value = alphaViewURL;
+          document.getElementById('betaLink').value = betaViewURL;
+          
+          topic = topicInput.value.trim();
+          alphaName = alphaNameInput.value.trim() || 'Alpha';
+          betaName = betaNameInput.value.trim() || 'Beta';
+          rounds = parseInt(document.getElementById('roundsInput').value) || 3;
+          maxSteps = rounds * 2;
+          debateTitle.innerHTML = `GroBattle: <span id="alphaName">${alphaName}</span> vs <span id="betaName">${betaName}</span> — <span id="debateTopic">${topic}</span>`;
+          alphaNameSpan.textContent = alphaName;
+          betaNameSpan.textContent = betaName;
+          alphaNameSpan2.textContent = alphaName;
+          betaNameSpan2.textContent = betaName;
+          debateTopicSpan.textContent = topic;
+          alphaTitle.textContent = `${alphaName} (Pro)`;
+          betaTitle.textContent = `${betaName} (Con)`;
+          alphaAvatar.title = alphaName;
+          betaAvatar.title = betaName;
+          alphaTurns.innerHTML = '';
+          betaTurns.innerHTML = '';
+          winnerBox.style.display = 'none';
+          history = [];
+          step = 0;
+          stopped = false;
+          broadcastStateUpdate();
+          setDebateStatus('Debate is configured. Waiting for debaters to connect...');
+          startBtn.disabled = true;
+          stopBtn.disabled = true;
+          alphaDebater.classList.remove('speaking');
+          betaDebater.classList.remove('speaking');
+          updateRoundIndicator();
+          reflectionTurns.innerHTML = '';
+          document.getElementById('alphaAvatarIcon').style.display = 'block';
+          document.getElementById('alphaAvatarGif').style.display = 'none';
+          document.getElementById('betaAvatarIcon').style.display = 'block';
+          document.getElementById('betaAvatarGif').style.display = 'none';
+          const explanationDiv = document.getElementById('topicExplanation');
+          explanationDiv.style.display = 'block';
+          explanationDiv.textContent = 'Loading topic explanation...';
+          try {
+              const res = await fetch('/ai-debate/explain', {
+                  method: 'POST',
+                  headers: { 'Content-Type': 'application/json' },
+                  body: JSON.stringify({ topic })
+              });
+              const data = await res.json();
+              if (data && data.explanation) {
+                  explanationDiv.textContent = data.explanation;
+                  if ('speechSynthesis' in window) {
+                      const utter = new SpeechSynthesisUtterance(data.explanation);
+                      utter.rate = 1;
+                      utter.pitch = 1;
+                      utter.lang = 'en-US';
+                      utter.onend = function() {};
+                      utter.onerror = function() {};
+                      window.speechSynthesis.speak(utter);
+                  }
+              } else {
+                  explanationDiv.textContent = 'Could not fetch topic explanation.';
+              }
+          } catch (err) {
+              explanationDiv.textContent = 'Could not fetch topic explanation.';
+          }
+      });
+
+
+        async function handleTurnComplete() {
+            step++;
+            updateRoundIndicator();
+
+            if (step % 2 === 0 && step < maxSteps) {
+                // End of a round: fetch and show subtopics
+                isDebatePaused = true;
+                const subtopics = await fetchSubtopics(topic);
+                if (subtopics.length > 0) {
+                    showSubtopicModal(subtopics);
+                    return; // Wait for user to pick one before continuing
+                }
+            }
+
+            if (step < maxSteps && !stopped) {
+                setTimeout(fetchStep, 500);
+            } else {
+                setDebateStatus('Debate finished!');
+                topicInput.disabled = false;
+                startBtn.disabled = true; // Stay disabled after a full debate until a new one is configured
+                stopBtn.disabled = true;
+                getDebateWinner();
+                alphaDebater.classList.remove('speaking');
+                betaDebater.classList.remove('speaking');
+                updateRoundIndicator();
+            }
+        }
+
+        async function fetchSubtopics(currentTopic) {
+            try {
+                const res = await fetch('/ai-debate/subtopics', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ topic: currentTopic })
+                });
+                const data = await res.json();
+                return data.subtopics || [];
+            } catch (e) {
+                console.error('Error fetching subtopics:', e);
+                return [];
+            }
+        }
+
+        function handleSubtopicChoice(selected) {
+            newTopic = selected;
+            isDebatePaused = false;
+
+            topic = selected;
+            debateTopicSpan.textContent = topic;
+            debateTopicSpan.style.transition = 'background 0.3s, color 0.3s';
+            debateTopicSpan.style.background = '#a78bfa';
+            debateTopicSpan.style.color = '#fff';
+            setTimeout(() => {
+                debateTopicSpan.style.background = '';
+                debateTopicSpan.style.color = '';
+            }, 800);
+
+            if (step % 2 !== 0) step++;
+
+            fetchStep();
+        }
+
+        function showSubtopicModal(subtopics) {
+            const modal = document.getElementById('subtopicModal');
+            const list = document.getElementById('subtopicList');
+            list.innerHTML = '';
+
+            subtopics.forEach(topic => {
+                const btn = document.createElement('button');
+                btn.className = 'subtopic-btn';
+                btn.textContent = topic.text || topic;
+                btn.onclick = () => {
+                    modal.style.display = 'none';
+                    handleSubtopicChoice(topic.text || topic);
+                };
+                list.appendChild(btn);
+            });
+
+            modal.style.display = 'flex';
+        }
+
+        function setDebateStatus(text) {
+            statusDiv.textContent = text;
+        }
+
+        function showLoader(show, label) {
+            centerLoader.style.display = show ? 'flex' : 'none';
+            loaderLabel.textContent = label || 'AI is thinking...';
+        }
+
+        function showWinner() {
+            const winner = Math.random() < 0.5 ? `🏆 Winner: ${alphaName} (Pro)` : `🏆 Winner: ${betaName} (Con)`;
+            winnerBox.textContent = winner;
+            winnerBox.style.display = 'block';
+            playSound('winner');
+            launchConfetti();
+        }
+
+        function setSpeakingDebater(isAlpha) {
+            if (isAlpha) {
+                alphaDebater.classList.add('speaking');
+                betaDebater.classList.remove('speaking');
+                playSound('turn');
+                document.getElementById('alphaAvatarIcon').style.display = 'none';
+                document.getElementById('alphaAvatarGif').style.display = 'block';
+                document.getElementById('betaAvatarIcon').style.display = 'block';
+                document.getElementById('betaAvatarGif').style.display = 'none';
+            } else {
+                betaDebater.classList.add('speaking');
+                alphaDebater.classList.remove('speaking');
+                playSound('turn');
+                document.getElementById('betaAvatarIcon').style.display = 'none';
+                document.getElementById('betaAvatarGif').style.display = 'block';
+                document.getElementById('alphaAvatarIcon').style.display = 'block';
+                document.getElementById('alphaAvatarGif').style.display = 'none';
+            }
+        }
+
+        function updateRoundIndicator() {
+            const currentRound = Math.floor(step / 2) + 1;
+            const totalRounds = rounds;
+            if (step < maxSteps) {
+                roundIndicator.textContent = `Round ${currentRound} of ${totalRounds}`;
+            } else {
+                roundIndicator.textContent = 'Reflection';
+            }
+        }
+
+        async function fetchStep() {
+            if (stopped) return;
+            if (isDebatePaused) return;
+
+            if (newTopic) {
+                topic = newTopic;
+                debateTopicSpan.textContent = topic;
+                newTopic = null;
+            }
+
+            const isAlpha = step % 2 === 0;
+            setDebateStatus((isAlpha ? alphaName : betaName) + ' is speaking...');
+            setSpeakingDebater(isAlpha);
+            showLoader(true, (isAlpha ? alphaName : betaName) + ' is thinking...');
+            updateRoundIndicator();
+
+            const res = await fetch('/ai-debate/step', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({ topic, history, step, alphaName, betaName, rounds })
+            });
+            const data = await res.json();
+            showLoader(false);
+            if (data && data.text) {
+                console.log('Debate turn text:', data.text);
+                if (isAlpha && alphaWindow) {
+                    alphaWindow.postMessage({
+                        type: 'alphaTurn', // Fixed from 'alphaTurns'
+                        text: data.text,
+                        alphaName
+                    }, '*');
+                    responseTimeout = setTimeout(() => {
+                        console.warn('AI response timeout — forcing next turn.');
+                        handleTurnComplete();
+                    }, 30000);
+                } 
+                else if (betaWindow && !isAlpha) {
+                    betaWindow.postMessage({
+                        type: 'betaTurn',
+                        text: data.text,
+                        step,
+                        betaName
+                    }, '*');
+                    responseTimeout = setTimeout(() => {
+                        console.warn('AI response timeout — forcing next turn.');
+                        handleTurnComplete();
+                    }, 30000);
+                }
+                history.push({ role: 'assistant', content: data.text });
+                broadcastStateUpdate();
+                const progress = Math.min((step + 1) / maxSteps, 1);
+                document.getElementById('debateProgressBar').style.width = (progress * 100) + '%';
+            } else {
+                setDebateStatus('Error: Could not get response.');
+                startBtn.disabled = false;
+                stopBtn.disabled = true;
+                getDebateWinner();
+                alphaDebater.classList.remove('speaking');
+                betaDebater.classList.remove('speaking');
+                updateRoundIndicator();
+            }
+        }
+
+        async function getDebateWinner() {
+            try {
+                const res = await fetch('/ai-debate/judge', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({
+                        alphaName,
+                        betaName,
+                        transcript: history.map(h => h.content),
+                        topic
+                    })
+                });
+                const data = await res.json();
+                if (data && data.winner) {
+                    winnerBox.textContent = `🏆 Winner: ${data.winner}`;
+                    winnerBox.style.display = 'block';
+                    playSound('winner');
+                    launchConfetti();
+                    document.getElementById('winnerModalTitle').textContent = `🏆 Winner: ${data.winner}`;
+                    document.getElementById('winnerModalReason').textContent = data.reason ? `Why: ${data.reason}` : '';
+                    let ratingsHtml = '';
+                    if (data.ratings) {
+                        ratingsHtml = 'Ratings:';
+                        for (const [name, rating] of Object.entries(data.ratings)) {
+                            ratingsHtml += `<br><span style='color:#fff;'>${name}:</span> ${rating}`;
+                        }
+                    }
+                    document.getElementById('winnerModalRatings').innerHTML = ratingsHtml;
+                    document.getElementById('winnerModal').style.display = 'flex';
+                    document.getElementById('closeWinnerModal').onclick = function() {
+                        document.getElementById('winnerModal').style.display = 'none';
+                    };
+                } else {
+                    winnerBox.textContent = '🏆 Winner: Could not determine.';
+                    winnerBox.style.display = 'block';
+                }
+            } catch (e) {
+                winnerBox.textContent = '🏆 Winner: Could not determine.';
+                winnerBox.style.display = 'block';
+            }
+        }
+        function openAlpha() {
+            alphaWindow = window.open(`/ai-debate/alphaView?session=${sessionId}`, 'alphaWindow');
+        }
+
+        function openBeta() {
+            betaWindow = window.open(`/ai-debate/betaView?session=${sessionId}`, 'betaWindow');
+        }
+        
+        startBtn.addEventListener('click', function() {
+            if (!alphaReady || !betaReady) {
+                setDebateStatus('Please open both Alpha and Beta views and click "Join Debate" before starting.');
+                return;
+            }
+
+            const isRestart = (history.length === 0);
+
+            startBtn.disabled = true;
+            stopBtn.disabled = false;
+
+            if (isRestart) {
+                alphaTurns.innerHTML = '';
+                betaTurns.innerHTML = '';
+                winnerBox.style.display = 'none';
+                history = [];
+                step = 0;
+            }
+
+            stopped = false;
+            setDebateStatus('');
+            document.getElementById('debateProgressBar').style.width = `${(step / (rounds * 2)) * 100}%`;
+            updateRoundIndicator();
+            reflectionTurns.innerHTML = '';
+
+            document.getElementById('topicExplanation').style.display = 'none';
+            document.getElementById('alphaAvatarIcon').style.display = 'block';
+            document.getElementById('alphaAvatarGif').style.display = 'none';
+            document.getElementById('betaAvatarIcon').style.display = 'block';
+            document.getElementById('betaAvatarGif').style.display = 'none';
+
+            rounds = parseInt(document.getElementById('roundsInput').value) || 3;
+            maxSteps = rounds * 2;
+            topicInput.disabled = true;
+            fetchStep();
+        });
+
+        stopBtn.addEventListener('click', function() {
+            stopped = true;
+            setDebateStatus('Debate stopped.');
+            topicInput.disabled = false;
+            startBtn.disabled = false;
+            stopBtn.disabled = true;
+            showLoader(false);
+            showWinner();
+            alphaDebater.classList.remove('speaking');
+            betaDebater.classList.remove('speaking');
+            updateRoundIndicator();
+        });
+        const resetBtn = document.getElementById('resetDebateBtn');
+        resetBtn.addEventListener('click', () => {
+            step = 0;
+            stopped = true;
+            history = [];
+            rounds = 3;
+            maxSteps = rounds * 2;
+            newTopic = null;
+            isDebatePaused = false;
+            sessionRestored = false;
+            document.getElementById('roundsInput').value = '3';
+            topicInput.disabled = false;
+            topicInput.value = '';
+            alphaNameInput.disabled = false;
+            betaNameInput.disabled = false;
+            alphaNameInput.value = '';
+            betaNameInput.value = '';
+            debateTopicSpan.textContent = '';
+            debateTitle.innerHTML = '';
+            socket.emit('resetSession', sessionId);
+            winnerBox.style.display = 'none';
+            alphaTurns.innerHTML = '';
+            betaTurns.innerHTML = '';
+            reflectionTurns.innerHTML = '';
+            document.getElementById('debateProgressBar').style.width = '0%';
+            document.getElementById('winnerModal').style.display = 'none';
+            document.getElementById('topicExplanation').style.display = 'none';
+            setDebateStatus('Debate reset. Ready to begin a new one.');
+            localStorage.removeItem('sessionId');
+            sessionId = null;
+        });
+
+        topicInput.setAttribute('aria-label', 'Debate topic');
+        alphaNameInput.setAttribute('aria-label', 'Alpha debater name');
+        betaNameInput.setAttribute('aria-label', 'Beta debater name');
+        startBtn.setAttribute('aria-label', 'Start Debate');
+        stopBtn.setAttribute('aria-label', 'Stop Debate');
+        topicForm.setAttribute('aria-label', 'Debate configuration form');
+
+        function showWelcomeBanner() {
+            const banner = document.getElementById('welcomeBanner');
+            banner.style.display = 'block';
+            document.getElementById('closeWelcomeBanner').onclick = function() {
+                banner.style.display = 'none';
+            };
+        }
+        function showWelcomeGif() {
+            document.getElementById('welcomeGifContainer').style.display = 'block';
+        }
+        function hideWelcomeGif() {
+            document.getElementById('welcomeGifContainer').style.display = 'none';
+        }
+        function trySpeakWelcome() {
+            if ('speechSynthesis' in window && document.hasFocus()) {
+                try {
+                    window.speechSynthesis.cancel();
+                    const welcome = new SpeechSynthesisUtterance('Welcome to Debate. Experience a live, intelligent debate on any topic you choose.');
+                    welcome.rate = 1;
+                    welcome.pitch = 1;
+                    welcome.lang = 'en-US';
+                    showWelcomeGif();
+                    window.speechSynthesis.speak(welcome);
+                    welcome.onend = function() { hideWelcomeGif(); };
+                    welcome.onerror = function() { showWelcomeBanner(); hideWelcomeGif(); };
+                } catch (e) {
+                    showWelcomeBanner();
+                    showWelcomeGif();
+                    setTimeout(hideWelcomeGif, 3500);
+                }
+            } else {
+                showWelcomeBanner();
+                showWelcomeGif();
+                setTimeout(hideWelcomeGif, 3500);
+            }
+        }
+        let welcomeSpoken = false;
+        function speakWelcome() {
+            if (welcomeSpoken) return;
+            welcomeSpoken = true;
+            trySpeakWelcome();
+            window.removeEventListener('click', speakWelcome);
+            window.removeEventListener('keydown', speakWelcome);
+            window.removeEventListener('focus', speakWelcome, true);
+        }
+        window.addEventListener('click', speakWelcome);
+        window.addEventListener('keydown', speakWelcome);
+        window.addEventListener('focus', speakWelcome, true);
+
+        const sounds = {
+            turn: new Audio('https://cdn.pixabay.com/audio/2022/07/26/audio_124bfae5b2.mp3'),
+            winner: new Audio('https://cdn.pixabay.com/audio/2022/03/15/audio_115b9b7b7b.mp3'),
+        };
+        function playSound(type) {
+            if (sounds[type]) {
+                sounds[type].currentTime = 0;
+                try {
+                    sounds[type].play();
+                } catch (e) {
+                }
+            }
+        }
+        function launchConfetti() {
+            const canvas = document.getElementById('confettiCanvas');
+            const ctx = canvas.getContext('2d');
+            const W = window.innerWidth;
+            const H = 120;
+            canvas.width = W;
+            canvas.height = H;
+            const confettiCount = 60;
+            const confetti = [];
+            for (let i = 0; i < confettiCount; i++) {
+                confetti.push({
+                    x: Math.random() * W,
+                    y: Math.random() * H * 0.5,
+                    r: 6 + Math.random() * 8,
+                    d: 10 + Math.random() * 20,
+                    color: `hsl(${Math.random()*360},80%,70%)`,
+                    tilt: Math.random() * 10 - 5,
+                    tiltAngle: 0,
+                    tiltAngleInc: (Math.random() * 0.07) + 0.05
+                });
+            }
+            let frame = 0;
+            function draw() {
+                ctx.clearRect(0, 0, W, H);
+                for (let i = 0; i < confetti.length; i++) {
+                    const c = confetti[i];
+                    ctx.beginPath();
+                    ctx.ellipse(c.x, c.y, c.r, c.r*0.4, c.tilt, 0, 2 * Math.PI);
+                    ctx.fillStyle = c.color;
+                    ctx.fill();
+                }
+                update();
+            }
+            function update() {
+                for (let i = 0; i < confetti.length; i++) {
+                    const c = confetti[i];
+                    c.y += Math.cos(frame/10 + c.d) + 1 + c.r/4;
+                    c.x += Math.sin(frame/20) * 2;
+                    c.tiltAngle += c.tiltAngleInc;
+                    c.tilt = Math.sin(c.tiltAngle) * 15;
+                    if (c.y > H) {
+                        c.x = Math.random() * W;
+                        c.y = -10;
+                    }
+                }
+                frame++;
+            }
+            let anim = setInterval(draw, 16);
+            setTimeout(() => { clearInterval(anim); ctx.clearRect(0,0,W,H); }, 1800);
+        }
+
+        socket.on('sessionState', (data) => {
+            if (!sessionRestored) {
+                sessionRestored = true;
+
+                if (data.topic) {
+                    topic = data.topic;
+                    topicInput.value = topic;
+                    debateTopicSpan.textContent = topic;
+                }
+                if (data.alphaName) {
+                    alphaName = data.alphaName;
+                    alphaNameInput.value = alphaName;
+                    alphaNameSpan.textContent = alphaName;
+                    alphaNameSpan2.textContent = alphaName;
+                    alphaTitle.textContent = `${alphaName} (Pro)`;
+                    alphaAvatar.title = alphaName;
+                }
+                if (data.betaName) {
+                    betaName = data.betaName;
+                    betaNameInput.value = betaName;
+                    betaNameSpan.textContent = betaName;
+                    betaNameSpan2.textContent = betaName;
+                    betaTitle.textContent = `${betaName} (Con)`;
+                    betaAvatar.title = betaName;
+                }
+
+                if (data.rounds) rounds = data.rounds;
+                if (data.maxSteps) maxSteps = data.maxSteps;
+                if (data.step !== undefined) step = data.step;
+                if (data.history) {
+                    history = data.history;
+                    alphaTurns.innerHTML = '';
+                    betaTurns.innerHTML = '';
+                    history.forEach((h, index) => {
+                        const div = document.createElement('div');
+                        div.textContent = h.content;
+                        if (index % 2 === 0) alphaTurns.appendChild(div);
+                        else betaTurns.appendChild(div);
+                    });
+                }
+
+                updateRoundIndicator();
+
+                if (step > 0 && step < maxSteps && isModerator) {
+                    const resume = confirm("Resume previous debate?");
+                    if (resume) fetchStep();
+                } else if (step >= maxSteps) {
+                    setDebateStatus('Debate finished!');
+                    showWinner();
+                }
+            }
+        });
+
+        socket.on('sessionUpdated', (data) => {
+            if (data.topic) topicInput.value = data.topic;
+            if (data.alphaName) alphaNameInput.value = data.alphaName;
+            if (data.betaName) betaNameInput.value = data.betaName;
+            if (data.step !== undefined) step = data.step;
+            if (data.rounds !== undefined) rounds = data.rounds;
+            if (data.maxSteps !== undefined) maxSteps = data.maxSteps;
+            if (data.history) {
+                const newTurn = data.history[data.history.length - 1];
+                const div = document.createElement('div');
+                div.textContent = newTurn.content;
+                if (data.history.length % 2 === 1) betaTurns.appendChild(div);
+                else alphaTurns.appendChild(div);
+            }
+        });
+
+        function broadcastStateUpdate() {
+            socket.emit('updateState', {
+                sessionId,
+                data: {
+                    topic,
+                    alphaName,
+                    betaName,
+                    rounds,
+                    maxSteps,
+                    step,
+                    history
+                }
+            });
+        }
+
+        function copyLink(role) {
+            const input = role === 'alpha'
+                ? document.getElementById('alphaLink')
+                : document.getElementById('betaLink');
+
+            navigator.clipboard.writeText(input.value).then(() => {
+                const status = document.getElementById(role + 'Status');
+                status.textContent = '✅ Link copied!';
+                setTimeout(() => {
+                    status.textContent = status.dataset.connected === 'true' ? `✅ ${capitalize(role)} connected` : '❌ Not connected';
+                }, 1500);
+            });
+            input.setSelectionRange(0, 99999);
+            document.execCommand('copy');
+
+            const status = document.getElementById(role + 'Status');
+            status.textContent = '✅ Link copied!';
+            setTimeout(() => {
+                status.textContent = status.dataset.connected === 'true' ? `✅ ${capitalize(role)} connected` : '❌ Not connected';
+            }, 1500);
+        }
+
+        function capitalize(word) {
+            return word.charAt(0).toUpperCase() + word.slice(1);
+        }
+    </script>
+</body>
+</html>
