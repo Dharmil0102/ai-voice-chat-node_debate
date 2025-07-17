@@ -3,9 +3,9 @@ const axios = require('axios');
 const OPENAI_API_KEY = process.env.OPENAI_API_KEY;
 
 // Base prompts with general instructions
-const proSystemPrompt = (name, topic) => `You are a debater named ${name}, who always argues in favor of the following topic: "${topic}". Your role is PRO. Never repeat any previous arguments, and always provide a new, one-sentence point. Be logical, persuasive, and concise. Do not use the word 'AI' in your response.`;
+const proSystemPrompt = (name, topic) => `You are a debater named ${name}, who always argues in favor of the following topic: "${topic}". Your role is to speak positive sides, points, perspective about the topic. Never repeat any previous arguments, and always provide a new, one-sentence point. Be logical, persuasive, and concise. Do not use the word 'AI' in your response.`;
 
-const conSystemPrompt = (name, topic) => `You are a debater named ${name}, who always argues against the following topic: "${topic}". Your role is CON. Never repeat any previous arguments, and always provide a new, one-sentence point. Be logical, persuasive, and concise. Do not use the word 'AI' in your response.`;
+const conSystemPrompt = (name, topic) => `You are a debater named ${name}, who always argues against the following topic: "${topic}". Your role is to speak negative sides, points, perspective about the topic. Never repeat any previous arguments, and always provide a new, one-sentence point. Be logical, persuasive, and concise. Do not use the word 'AI' in your response.`;
 
 
 async function getOpenAIResponse(systemPrompt, history) {
