@@ -437,13 +437,13 @@ startBtn.addEventListener('click', function handleJoinClick() {
 });
 
 // Listen for postMessage from live
-window.addEventListener('message', (event) => {
-  const { type, text, betaName } = event.data;
-  if (type === 'alphaTurn') {
-    console.log('📨 Received alphaTurn via postMessage:', text);
-    playTurn(text, betaName || myName);
-  }
-});
+// window.addEventListener('message', (event) => {
+//   const { type, text, betaName } = event.data;
+//   if (type === 'alphaTurn') {
+//     console.log('📨 Received alphaTurn via postMessage:', text);
+//     playTurn(text, betaName || myName);
+//   }
+// });
 
 // Load past Alpha turns on session restore
 socket.on('sessionState', (data) => {
@@ -461,21 +461,36 @@ socket.on('sessionState', (data) => {
 });
 
 // Listen for new turns from live
-socket.on('sessionUpdated', (data) => {
-  const last = data.history?.[data.history.length - 1];
-  const lastIndex = data.history.length - 1;
+// socket.on('sessionUpdated', (data) => {
+//   const last = data.history?.[data.history.length - 1];
+//   const lastIndex = data.history.length - 1;
 
-  const isMyTurn = (lastIndex % 2 === 0); // Alpha = even
-  if (isMyTurn && last?.content) {
-    const alreadySpoken = Array.from(myTurnsContainer.children).some(div =>
-      div.textContent.includes(last.content)
-    );
-    if (!alreadySpoken) {
-      playTurn(last.content, myName);
+//   const isMyTurn = (lastIndex % 2 === 0); // Alpha = even
+//   if (isMyTurn && last?.content) {
+//     const alreadySpoken = Array.from(myTurnsContainer.children).some(div =>
+//       div.textContent.includes(last.content)
+//     );
+//     if (!alreadySpoken) {
+//       playTurn(last.content, myName);
+//     }
+//   }
+// });
+socket.on('startTurn', (data) => {
+    if (data.role === 'alpha') {
+        console.log('📨 Received alpha turn via socket:', data.text);
+        playTurn(data.text, data.name || myName);
     }
-  }
 });
-
+socket.on('roleTaken', ({ role }) => {
+    if (role === 'beta') {
+        const statusSpan = document.getElementById('betaStatus') || document.createElement('div');
+        statusSpan.textContent = '❌ Role already taken. Please open a different session link.';
+        startBtn.disabled = false;
+        startBtn.textContent = 'Join Debate';
+        startBtn.style.opacity = 1;
+        startBtn.style.display = 'block';
+    }
+});
 // Speak + animate
 function playTurn(text, speakerName) {
   const container = document.getElementById('alphaTurns');
@@ -492,7 +507,7 @@ function playTurn(text, speakerName) {
   debater?.classList.add('speaking');
   avatarIcon?.style.setProperty('display', 'none');
   avatarGif?.style.setProperty('display', 'block');
-
+  
   // Voice
   if ('speechSynthesis' in window) {
     function speakOnceReady() {

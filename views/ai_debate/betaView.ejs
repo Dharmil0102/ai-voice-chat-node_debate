@@ -437,13 +437,13 @@ startBtn.addEventListener('click', () => {
 });
 
 // Listen to messages from live
-window.addEventListener('message', (event) => {
-  const { type, text, betaName } = event.data;
-  if (type === 'betaTurn') {
-    console.log('📨 Received betaTurn via postMessage:', text);
-    playTurn(text, betaName || myName);
-  }
-});
+// window.addEventListener('message', (event) => {
+//   const { type, text, betaName } = event.data;
+//   if (type === 'betaTurn') {
+//     console.log('📨 Received betaTurn via postMessage:', text);
+//     playTurn(text, betaName || myName);
+//   }
+// });
 
 // Restore past turns
 socket.on('sessionState', (data) => {
@@ -459,21 +459,37 @@ socket.on('sessionState', (data) => {
     });
   }
 });
-
-// Listen for session updates
-socket.on('sessionUpdated', (data) => {
-  const last = data.history?.[data.history.length - 1];
-  const lastIndex = data.history.length - 1;
-
-  const isMyTurn = (lastIndex % 2 === 1);
-  if (isMyTurn && last?.content) {
-    const alreadySpoken = Array.from(myTurnsContainer.children).some(div =>
-      div.textContent.includes(last.content)
-    );
-    if (!alreadySpoken) {
-      playTurn(last.content, myName);
+socket.on('roleTaken', ({ role }) => {
+    if (role === 'beta') {
+        const statusSpan = document.getElementById('betaStatus') || document.createElement('div');
+        statusSpan.textContent = '❌ Role already taken. Please open a different session link.';
+        startBtn.disabled = false;
+        startBtn.textContent = 'Join Debate';
+        startBtn.style.opacity = 1;
+        startBtn.style.display = 'block';
     }
-  }
+});
+// Listen for session updates
+// socket.on('sessionUpdated', (data) => {
+//   const last = data.history?.[data.history.length - 1];
+//   const lastIndex = data.history.length - 1;
+
+//   const isMyTurn = (lastIndex % 2 === 1);
+//   if (isMyTurn && last?.content) {
+//     const alreadySpoken = Array.from(myTurnsContainer.children).some(div =>
+//       div.textContent.includes(last.content)
+//     );
+//     if (!alreadySpoken) {
+//       playTurn(last.content, myName);
+//     }
+//   }
+// });
+
+socket.on('startTurn', (data) => {
+    if (data.role === 'beta') {
+        console.log('📨 Received beta turn via socket:', data.text);
+        playTurn(data.text, data.name || myName);
+    }
 });
 
 // Voice + animation playback

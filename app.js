@@ -28,8 +28,8 @@ const debateRoutes = require('./ai_debate/debateRoutes');
 app.use('/ai-debate', debateRoutes);
 
 // --- 🔥 WebSocket session store ---
-const sessions = {};       // Debate content: sessionId => { topic, alphaName, ... }
-const sessionStates = {};  // Readiness: sessionId => { alphaReady, betaReady }
+const sessions = {};       // Debate content: sessionId => { topic, alphaName, ... }
+const sessionStates = {};  // Readiness: sessionId => { alphaReady, betaReady }
 
 io.on('connection', (socket) => {
   console.log('Socket connected:', socket.id);
@@ -38,9 +38,9 @@ io.on('connection', (socket) => {
   socket.on('joinSession', (sessionId) => {
     if (!sessionId) {
       console.log('Client tried to join with a null sessionId.');
-      return; 
+      return;
     }
-
+    
     if (!sessions[sessionId]) {
       sessions[sessionId] = {
         topic: '',
@@ -53,37 +53,47 @@ io.on('connection', (socket) => {
         isDebateActive: false,
       };
     }
-
+    
     if (!sessionStates[sessionId]) {
       sessionStates[sessionId] = {
         alphaReady: false,
         betaReady: false,
       };
     }
-
+    
+    // Add the socket's session ID to the socket object for easier cleanup on disconnect
+    socket.sessionId = sessionId;
+    
     socket.join(sessionId);
-    socket.emit('sessionState', sessions[sessionId]);
-    io.to(sessionId).emit('statusUpdate', sessionStates[sessionId]);
+    io.to(sessionId).emit('sessionState', sessions[sessionId]);
     console.log(`Client ${socket.id} joined session ${sessionId}.`);
   });
 
-  // Shared state update (e.g. names, steps, history)
-  socket.on('updateState', ({ sessionId, data }) => {
-    sessions[sessionId] = { ...sessions[sessionId], ...data };
-    socket.to(sessionId).emit('sessionUpdated', data);
-  });
-
-  // Handle readiness (FIX: Match case to BetaReady and AlphaReady)
+  // Handle readiness with a check
   socket.on('AlphaReady', (sessionId) => {
     if (!sessionStates[sessionId]) sessionStates[sessionId] = {};
-    sessionStates[sessionId].alphaReady = true;
-    io.to(sessionId).emit('statusUpdate', sessionStates[sessionId]);
+    if (sessionStates[sessionId].alphaReady) {
+      console.log(`Client ${socket.id} attempted to join as Alpha, but role is taken.`);
+      socket.emit('roleTaken', { role: 'alpha' });
+    } else {
+      sessionStates[sessionId].alphaReady = true;
+      socket.alphaId = socket.id; // Store the ID of the connected Alpha
+      io.to(sessionId).emit('statusUpdate', sessionStates[sessionId]);
+      console.log(`Client ${socket.id} is now Alpha in session ${sessionId}.`);
+    }
   });
 
   socket.on('BetaReady', (sessionId) => {
     if (!sessionStates[sessionId]) sessionStates[sessionId] = {};
-    sessionStates[sessionId].betaReady = true;
-    io.to(sessionId).emit('statusUpdate', sessionStates[sessionId]);
+    if (sessionStates[sessionId].betaReady) {
+      console.log(`Client ${socket.id} attempted to join as Beta, but role is taken.`);
+      socket.emit('roleTaken', { role: 'beta' });
+    } else {
+      sessionStates[sessionId].betaReady = true;
+      socket.betaId = socket.id; // Store the ID of the connected Beta
+      io.to(sessionId).emit('statusUpdate', sessionStates[sessionId]);
+      console.log(`Client ${socket.id} is now Beta in session ${sessionId}.`);
+    }
   });
 
   // When a turn is completed
@@ -99,16 +109,32 @@ io.on('connection', (socket) => {
     io.to(sessionId).emit('statusUpdate', sessionStates[sessionId]);
   });
 
+  // The moderator sends a turn command, and the server broadcasts it
+  socket.on('startTurn', (data) => {
+    const { sessionId, role, text, name } = data;
+    console.log(`Received startTurn for ${role} in session ${sessionId}`);
+    io.to(sessionId).emit('startTurn', { role, text, name });
+  });
+
   socket.on('disconnect', () => {
     console.log('Socket disconnected:', socket.id);
-    // Optional: cleanup logic here
+    const sessionId = socket.sessionId;
+    if (sessionId && sessionStates[sessionId]) {
+      if (socket.id === socket.alphaId) {
+        sessionStates[sessionId].alphaReady = false;
+        io.to(sessionId).emit('statusUpdate', sessionStates[sessionId]);
+      } else if (socket.id === socket.betaId) {
+        sessionStates[sessionId].betaReady = false;
+        io.to(sessionId).emit('statusUpdate', sessionStates[sessionId]);
+      }
+    }
   });
 });
 
 
 // 🔥 Start the server
 server.listen(port, () => {
-  console.log(`Server running at http://localhost:${port}`);
+  console.log(`Server running at http://localhost:${port}`);
 });
 
 module.exports = { server, io };

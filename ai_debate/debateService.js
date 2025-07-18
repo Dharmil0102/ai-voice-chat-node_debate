@@ -2,11 +2,12 @@ const axios = require('axios');
 
 const OPENAI_API_KEY = process.env.OPENAI_API_KEY;
 
-// Base prompts with general instructions
-const proSystemPrompt = (name, topic) => `You are a debater named ${name}, who always argues in favor of the following topic: "${topic}". Your role is to speak positive sides, points, perspective about the topic. Never repeat any previous arguments, and always provide a new, one-sentence point. Be logical, persuasive, and concise. Do not use the word 'AI' in your response.`;
+// Base prompts with direct, assertive instructions
+const proSystemPrompt = (name, topic) => `You are a debater named ${name}. Your sole purpose is to argue that the following statement is TRUE and relevant: "${topic}". For each of your turns, you must present a new, distinct argument that proves your side. Be logical and persuasive. and keep it short.`;
 
-const conSystemPrompt = (name, topic) => `You are a debater named ${name}, who always argues against the following topic: "${topic}". Your role is to speak negative sides, points, perspective about the topic. Never repeat any previous arguments, and always provide a new, one-sentence point. Be logical, persuasive, and concise. Do not use the word 'AI' in your response.`;
-
+// Beta (Con) must argue that the topic IS NOT true.
+// The key is the instruction to directly discredit the opponent's argument.
+const conSystemPrompt = (name, topic) => `You are a debater named ${name}. Your sole purpose is to argue that the following statement is NOT true and NOT relevant: "${topic}". For each turn, you must FIRST directly discredit the last point made by your opponent. Then, you must present a new argument that proves your side. Your tone is combative, logical, and assertive. and keep it short.`;
 
 async function getOpenAIResponse(systemPrompt, history) {
   try {
@@ -14,7 +15,7 @@ async function getOpenAIResponse(systemPrompt, history) {
       'https://api.openai.com/v1/chat/completions',
       {
         // Changed to a valid and cost-effective model
-        model: 'gpt-4.1-nano', 
+        model: 'gpt-4o-mini', 
         messages: [
           { role: 'system', content: systemPrompt },
           ...history
@@ -37,15 +38,15 @@ async function getOpenAIResponse(systemPrompt, history) {
   }
 }
 
-async function generateSubtopics(topic) {
-  const prompt = `Generate 5 short and distinct subtopics or follow-up questions that are interesting and debatable, related to the main topic: "${topic}". Respond only as a JSON array of strings.`;
+async function generateSubtopics(topic, num_subtopics) {
+  const prompt = `Generate ${num_subtopics} short and distinct subtopics or follow-up questions that are interesting and debatable, related to the main topic: "${topic}". Respond only as a JSON array of strings.`;
 
   const response = await getOpenAIResponse(prompt, []);
   try {
     const match = response.match(/\[.*\]/s); 
     if (match) {
       const subtopics = JSON.parse(match[0]);
-      if (Array.isArray(subtopics)) return subtopics.slice(0, 5);
+      if (Array.isArray(subtopics)) return subtopics.slice(0, num_subtopics);
     }
   } catch (e) {
     console.error('Error parsing subtopics JSON:', e);

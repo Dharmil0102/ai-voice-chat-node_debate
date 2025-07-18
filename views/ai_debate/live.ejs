@@ -1,11 +1,11 @@
 <!DOCTYPE html>
 <html>
 <head>
-    <title>GroBattle</title>
-    <meta name="description" content="A beautiful, interactive AI debate tool. Enter your own debater names and topic, and watch two AI agents battle it out in real time.">
-    <link rel="icon" type="image/png" href="https://cdn.jsdelivr.net/gh/twitter/twemoji@14.0.2/assets/72x72/1f916.png">
-    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;600;700&display=swap" rel="stylesheet">
-    <style>
+    <title>GroBattle</title>
+    <meta name="description" content="A beautiful, interactive AI debate tool. Enter your own debater names and topic, and watch two AI agents battle it out in real time.">
+    <link rel="icon" type="image/png" href="https://cdn.jsdelivr.net/gh/twitter/twemoji@14.0.2/assets/72x72/1f916.png">
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;600;700&display=swap" rel="stylesheet">
+    <style>
         .subtopic-btn {
             padding: 0.8em 1.2em;
             background: linear-gradient(90deg, #7c3aed 0%, #a78bfa 100%);
@@ -774,7 +774,7 @@
             <input type="number" id="roundsInput" placeholder="Rounds" min="1" max="10" value="3" required style="width: 90px; font-size: 1.1em; border-radius: 32px; border: none; outline: none; background: #23243a; color: #fff; font-weight: 500; padding: 0.7em 1.2em; text-align: center;">
             <button type="submit">Set Topic</button>
         </form>
-        
+        
         <h1 id="debateTitle">Gro Battle: <span id="alphaName">Alpha</span> vs <span id="betaName">Beta</span> — <span id="debateTopic"><%= topic %></span></h1>
         <div class="debate-announcement"><span id="alphaName2">Alpha</span> vs <span id="betaName2">Beta</span> are battling</div>
         <div class="debate-status" id="debateStatus"></div>
@@ -817,7 +817,7 @@
             <div id="reflectionTurns"></div>
         </div>
         <div id="viewLinks" style="margin-top: 1rem;">
-              <div id="viewLinks" style="margin: 1rem auto; max-width: 800px; display: flex; flex-direction: column; gap: 1.5em; padding: 1.5em; background: rgba(30, 30, 50, 0.7); border-radius: 24px; border: 2px solid #7c3aed55; box-shadow: 0 4px 24px #7c3aed33, 0 2px 12px #0002; backdrop-filter: blur(16px);">
+              <div style="margin: 1rem auto; max-width: 800px; display: flex; flex-direction: column; gap: 1.5em; padding: 1.5em; background: rgba(30, 30, 50, 0.7); border-radius: 24px; border: 2px solid #7c3aed55; box-shadow: 0 4px 24px #7c3aed33, 0 2px 12px #0002; backdrop-filter: blur(16px);">
           <div class="debater-link-box">
               <div class="debater-link-title">
                   <span class="avatar-icon">🤖</span>
@@ -863,741 +863,780 @@
     </div>
     <footer class="ai-footer">Built By GroBro</footer>
     <script src="/socket.io/socket.io.js"></script>
-    
+    
     <script>
-        let betaWindow = null;
-        let alphaWindow = null; 
-        let isDebatePaused = false;
-        let newTopic = null;
-        let topic = decodeURIComponent('<%= encodeURIComponent(topic) %>');
-        let alphaName = 'Alpha';
-        let betaName = 'Beta';
-        let history = [];
-        let step = 0;
-        let rounds = 3;
-        let maxSteps = 6; // 3 rounds (A, B, A, B, ...)
-        let responseTimeout = null;
-        const isModerator = !window.opener; // assumes only main tab opens Alpha/Beta views
-        const alphaTurns = document.getElementById('alphaTurns');
-        const betaTurns = document.getElementById('betaTurns');
-        const statusDiv = document.getElementById('debateStatus');
-        const startBtn = document.getElementById('startDebateBtn');
-        const stopBtn = document.getElementById('stopDebateBtn');
-        const centerLoader = document.getElementById('centerLoader');
-        const loaderLabel = document.getElementById('loaderLabel');
-        const winnerBox = document.getElementById('winnerBox');
-        const topicForm = document.getElementById('topicForm');
-        const topicInput = document.getElementById('topicInput');
-        const alphaNameInput = document.getElementById('alphaNameInput');
-        const betaNameInput = document.getElementById('betaNameInput');
-        const debateTitle = document.getElementById('debateTitle');
-        const alphaNameSpan = document.getElementById('alphaName');
-        const betaNameSpan = document.getElementById('betaName');
-        const alphaNameSpan2 = document.getElementById('alphaName2');
-        const betaNameSpan2 = document.getElementById('betaName2');
-        const debateTopicSpan = document.getElementById('debateTopic');
-        const alphaDebater = document.getElementById('alphaDebater');
-        const betaDebater = document.getElementById('betaDebater');
-        const alphaTitle = document.getElementById('alphaTitle');
-        const betaTitle = document.getElementById('betaTitle');
-        let sessionRestored = false;
-        const alphaAvatar = document.getElementById('alphaAvatar');
-        const betaAvatar = document.getElementById('betaAvatar');
-        let stopped = false;
-        const roundIndicator = document.getElementById('roundIndicator');
-        const reflectionTurns = document.getElementById('reflectionTurns');
-        // Onboarding modal logic
-        const onboardingModal = document.getElementById('onboardingModal');
-        const closeOnboardingBtn = document.getElementById('closeOnboardingBtn');
-        if (!localStorage.getItem('aiDebateOnboarded')) {
-            onboardingModal.style.display = 'flex';
-        }
-        closeOnboardingBtn.addEventListener('click', function() {
-            onboardingModal.style.display = 'none';
-            localStorage.setItem('aiDebateOnboarded', '1');
-        });
-        // document.getElementById('humanControls').style.display = 'flex';
+    let newTopic = null; // This variable is no longer needed but kept for clarity.
+    let topic = decodeURIComponent('<%= encodeURIComponent(topic) %>');
+    let alphaName = 'Alpha';
+    let betaName = 'Beta';
+    let history = [];
+    let step = 0;
+    let rounds = 3;
+    let maxSteps = 6; // 3 rounds (A, B, A, B, ...)
+    let responseTimeout = null;
+    const isModerator = !window.opener;
+    const alphaTurns = document.getElementById('alphaTurns');
+    const betaTurns = document.getElementById('betaTurns');
+    const statusDiv = document.getElementById('debateStatus');
+    const startBtn = document.getElementById('startDebateBtn');
+    const stopBtn = document.getElementById('stopDebateBtn');
+    const centerLoader = document.getElementById('centerLoader');
+    const loaderLabel = document.getElementById('loaderLabel');
+    const winnerBox = document.getElementById('winnerBox');
+    const topicForm = document.getElementById('topicForm');
+    const topicInput = document.getElementById('topicInput');
+    const alphaNameInput = document.getElementById('alphaNameInput');
+    const betaNameInput = document.getElementById('betaNameInput');
+    const debateTitle = document.getElementById('debateTitle');
+    const alphaNameSpan = document.getElementById('alphaName');
+    const betaNameSpan = document.getElementById('betaName');
+    const alphaNameSpan2 = document.getElementById('alphaName2');
+    const betaNameSpan2 = document.getElementById('betaName2');
+    const debateTopicSpan = document.getElementById('debateTopic');
+    const alphaDebater = document.getElementById('alphaDebater');
+    const betaDebater = document.getElementById('betaDebater');
+    const alphaTitle = document.getElementById('alphaTitle');
+    const betaTitle = document.getElementById('betaTitle');
+    let sessionRestored = false;
+    const alphaAvatar = document.getElementById('alphaAvatar');
+    const betaAvatar = document.getElementById('betaAvatar');
+    let stopped = false;
+    const roundIndicator = document.getElementById('roundIndicator');
+    const reflectionTurns = document.getElementById('reflectionTurns');
 
-        const params = new URLSearchParams(window.location.search);
-        let sessionId;
+    // --- NEW VARIABLE TO STORE SUBTOPICS ---
+    let subtopicsList = [];
+    // --- END NEW VARIABLE ---
 
-        if (params.get('session')) {
-            sessionId = params.get('session'); // reuse existing session
-        } else {
-            // Create new only after topic submission
-            sessionId = null;
-        }
-        
-        let alphaReady = false;
-        let betaReady = false;
+    // Onboarding modal logic
+    const onboardingModal = document.getElementById('onboardingModal');
+    const closeOnboardingBtn = document.getElementById('closeOnboardingBtn');
+    if (!localStorage.getItem('aiDebateOnboarded')) {
+        onboardingModal.style.display = 'flex';
+    }
+    closeOnboardingBtn.addEventListener('click', function() {
+        onboardingModal.style.display = 'none';
+        localStorage.setItem('aiDebateOnboarded', '1');
+    });
 
-        const socket = io();
-        socket.emit('joinSession', sessionId);
+    const params = new URLSearchParams(window.location.search);
+    let sessionId;
 
-        // Listen for readiness updates
-        socket.on('statusUpdate', (status) => {
-            console.log('Received statusUpdate:', status);
-            alphaReady = status.alphaReady;
-            betaReady = status.betaReady;
+    if (params.get('session')) {
+        sessionId = params.get('session');
+    } else {
+        sessionId = null;
+    }
 
-            const alphaStatusSpan = document.getElementById('alphaStatus');
-            const betaStatusSpan = document.getElementById('betaStatus');
-            
-            alphaStatusSpan.textContent = alphaReady ? '✅ Connected' : '❌ Not connected';
-            alphaStatusSpan.classList.toggle('status-connected', alphaReady);
-            alphaStatusSpan.dataset.connected = alphaReady;
+    let alphaReady = false;
+    let betaReady = false;
 
-            betaStatusSpan.textContent = betaReady ? '✅ Connected' : '❌ Not connected';
-            betaStatusSpan.classList.toggle('status-connected', betaReady);
-            betaStatusSpan.dataset.connected = betaReady;
-            
-            // Enable the start button if both are ready
-            if (alphaReady && betaReady) {
-                startBtn.disabled = false;
-                setDebateStatus('Ready to begin! Click "Start Debate" to begin.');
-            }
-        });
-        
-        socket.on('turnDone', ({ role }) => {
-            clearTimeout(responseTimeout);
-            handleTurnComplete();
-        });
-        
-        topicForm.addEventListener('submit', async function(e) {
-          // Prevent the default form submission behavior
-          e.preventDefault();
+    const socket = io();
+    socket.emit('joinSession', sessionId);
 
-          // Check if a session ID already exists. If not, create one.
-          if (!sessionId) {
-              sessionId = crypto.randomUUID();
-              localStorage.setItem('sessionId', sessionId);
-              const newUrl = `${window.location.pathname}?session=${sessionId}`;
-              window.history.pushState({ path: newUrl }, '', newUrl);
+    socket.on('statusUpdate', (status) => {
+        console.log('Received statusUpdate:', status);
+        alphaReady = status.alphaReady;
+        betaReady = status.betaReady;
 
-              // 🔥 CRITICAL FIX: Tell the server to join the new session room
-              socket.emit('joinSession', sessionId);
-          }
-          
-          // Now that the session ID is guaranteed to be in the URL,
-          // the rest of the logic can proceed as before.
-          const alphaViewURL = `${location.origin}/ai-debate/alphaView?session=${sessionId}`;
-          const betaViewURL = `${location.origin}/ai-debate/betaView?session=${sessionId}`;
-          document.getElementById('alphaLink').value = alphaViewURL;
-          document.getElementById('betaLink').value = betaViewURL;
-          
-          topic = topicInput.value.trim();
-          alphaName = alphaNameInput.value.trim() || 'Alpha';
-          betaName = betaNameInput.value.trim() || 'Beta';
-          rounds = parseInt(document.getElementById('roundsInput').value) || 3;
-          maxSteps = rounds * 2;
-          debateTitle.innerHTML = `GroBattle: <span id="alphaName">${alphaName}</span> vs <span id="betaName">${betaName}</span> — <span id="debateTopic">${topic}</span>`;
-          alphaNameSpan.textContent = alphaName;
-          betaNameSpan.textContent = betaName;
-          alphaNameSpan2.textContent = alphaName;
-          betaNameSpan2.textContent = betaName;
-          debateTopicSpan.textContent = topic;
-          alphaTitle.textContent = `${alphaName} (Pro)`;
-          betaTitle.textContent = `${betaName} (Con)`;
-          alphaAvatar.title = alphaName;
-          betaAvatar.title = betaName;
-          alphaTurns.innerHTML = '';
-          betaTurns.innerHTML = '';
-          winnerBox.style.display = 'none';
-          history = [];
-          step = 0;
-          stopped = false;
-          broadcastStateUpdate();
-          setDebateStatus('Debate is configured. Waiting for debaters to connect...');
-          startBtn.disabled = true;
-          stopBtn.disabled = true;
-          alphaDebater.classList.remove('speaking');
-          betaDebater.classList.remove('speaking');
-          updateRoundIndicator();
-          reflectionTurns.innerHTML = '';
-          document.getElementById('alphaAvatarIcon').style.display = 'block';
-          document.getElementById('alphaAvatarGif').style.display = 'none';
-          document.getElementById('betaAvatarIcon').style.display = 'block';
-          document.getElementById('betaAvatarGif').style.display = 'none';
-          const explanationDiv = document.getElementById('topicExplanation');
-          explanationDiv.style.display = 'block';
-          explanationDiv.textContent = 'Loading topic explanation...';
-          try {
-              const res = await fetch('/ai-debate/explain', {
-                  method: 'POST',
-                  headers: { 'Content-Type': 'application/json' },
-                  body: JSON.stringify({ topic })
-              });
-              const data = await res.json();
-              if (data && data.explanation) {
-                  explanationDiv.textContent = data.explanation;
-                  if ('speechSynthesis' in window) {
-                      const utter = new SpeechSynthesisUtterance(data.explanation);
-                      utter.rate = 1;
-                      utter.pitch = 1;
-                      utter.lang = 'en-US';
-                      utter.onend = function() {};
-                      utter.onerror = function() {};
-                      window.speechSynthesis.speak(utter);
-                  }
-              } else {
-                  explanationDiv.textContent = 'Could not fetch topic explanation.';
-              }
-          } catch (err) {
-              explanationDiv.textContent = 'Could not fetch topic explanation.';
-          }
-      });
+        const alphaStatusSpan = document.getElementById('alphaStatus');
+        const betaStatusSpan = document.getElementById('betaStatus');
 
+        alphaStatusSpan.textContent = alphaReady ? '✅ Connected' : '❌ Not connected';
+        alphaStatusSpan.classList.toggle('status-connected', alphaReady);
+        alphaStatusSpan.dataset.connected = alphaReady;
 
-        async function handleTurnComplete() {
-            step++;
-            updateRoundIndicator();
+        betaStatusSpan.textContent = betaReady ? '✅ Connected' : '❌ Not connected';
+        betaStatusSpan.classList.toggle('status-connected', betaReady);
+        betaStatusSpan.dataset.connected = betaReady;
 
-            if (step % 2 === 0 && step < maxSteps) {
-                // End of a round: fetch and show subtopics
-                isDebatePaused = true;
-                const subtopics = await fetchSubtopics(topic);
-                if (subtopics.length > 0) {
-                    showSubtopicModal(subtopics);
-                    return; // Wait for user to pick one before continuing
-                }
-            }
+         if (step > 0) {
+        // If the debate is already in progress, keep the Start button disabled.
+        startBtn.disabled = true;
+        // The status will be handled by the turn-based fetchStep function.
+        } else {
+            // Only if the debate has not started, check for readiness.
+            if (alphaReady && betaReady) {
+                startBtn.disabled = false;
+                setDebateStatus('Ready to begin! Click "Start Debate" to begin.');
+            } else {
+                // Keep the button disabled if not all debaters are connected.
+                startBtn.disabled = true;
+                setDebateStatus('Waiting for all debaters to connect...');
+            }
+        }
+    });
 
-            if (step < maxSteps && !stopped) {
-                setTimeout(fetchStep, 500);
-            } else {
-                setDebateStatus('Debate finished!');
-                topicInput.disabled = false;
-                startBtn.disabled = true; // Stay disabled after a full debate until a new one is configured
-                stopBtn.disabled = true;
-                getDebateWinner();
-                alphaDebater.classList.remove('speaking');
-                betaDebater.classList.remove('speaking');
-                updateRoundIndicator();
-            }
-        }
+    socket.on('turnDone', ({ role }) => {
+        clearTimeout(responseTimeout);
+        handleTurnComplete();
+    });
 
-        async function fetchSubtopics(currentTopic) {
-            try {
-                const res = await fetch('/ai-debate/subtopics', {
-                    method: 'POST',
-                    headers: { 'Content-Type': 'application/json' },
-                    body: JSON.stringify({ topic: currentTopic })
-                });
-                const data = await res.json();
-                return data.subtopics || [];
-            } catch (e) {
-                console.error('Error fetching subtopics:', e);
-                return [];
-            }
-        }
+    topicForm.addEventListener('submit', async function(e) {
+        e.preventDefault();
+        if (step > 0) {
+            setDebateStatus("Debate in progress. Please use the 'Reset Debate' button to start over.");
+            return;
+        }
+        if (!sessionId) {
+            sessionId = crypto.randomUUID();
+            localStorage.setItem('sessionId', sessionId);
+            const newUrl = `${window.location.pathname}?session=${sessionId}`;
+            window.history.pushState({ path: newUrl }, '', newUrl);
+            socket.emit('joinSession', sessionId);
+        }
 
-        function handleSubtopicChoice(selected) {
-            newTopic = selected;
-            isDebatePaused = false;
+        const alphaViewURL = `${location.origin}/ai-debate/alphaView?session=${sessionId}`;
+        const betaViewURL = `${location.origin}/ai-debate/betaView?session=${sessionId}`;
+        document.getElementById('alphaLink').value = alphaViewURL;
+        document.getElementById('betaLink').value = betaViewURL;
 
-            topic = selected;
-            debateTopicSpan.textContent = topic;
-            debateTopicSpan.style.transition = 'background 0.3s, color 0.3s';
-            debateTopicSpan.style.background = '#a78bfa';
-            debateTopicSpan.style.color = '#fff';
-            setTimeout(() => {
-                debateTopicSpan.style.background = '';
-                debateTopicSpan.style.color = '';
-            }, 800);
+        topic = topicInput.value.trim();
+        alphaName = alphaNameInput.value.trim() || 'Alpha';
+        betaName = betaNameInput.value.trim() || 'Beta';
+        rounds = parseInt(document.getElementById('roundsInput').value) || 3;
+        maxSteps = rounds * 2;
+        debateTitle.innerHTML = `GroBattle: <span id="alphaName">${alphaName}</span> vs <span id="betaName">${betaName}</span> — <span id="debateTopic">${topic}</span>`;
+        alphaNameSpan.textContent = alphaName;
+        betaNameSpan.textContent = betaName;
+        alphaNameSpan2.textContent = alphaName;
+        betaNameSpan2.textContent = betaName;
+        debateTopicSpan.textContent = topic;
+        alphaTitle.textContent = `${alphaName} (Pro)`;
+        betaTitle.textContent = `${betaName} (Con)`;
+        alphaAvatar.title = alphaName;
+        betaAvatar.title = betaName;
+        alphaTurns.innerHTML = '';
+        betaTurns.innerHTML = '';
+        winnerBox.style.display = 'none';
+        history = [];
+        step = 0;
+        stopped = false;
+        broadcastStateUpdate();
+        setDebateStatus('Debate is configured. Waiting for debaters to connect...');
+        startBtn.disabled = true;
+        stopBtn.disabled = true;
+        alphaDebater.classList.remove('speaking');
+        betaDebater.classList.remove('speaking');
+        updateRoundIndicator();
+        reflectionTurns.innerHTML = '';
+        document.getElementById('alphaAvatarIcon').style.display = 'block';
+        document.getElementById('alphaAvatarGif').style.display = 'none';
+        document.getElementById('betaAvatarIcon').style.display = 'block';
+        document.getElementById('betaAvatarGif').style.display = 'none';
+        const explanationDiv = document.getElementById('topicExplanation');
+        explanationDiv.style.display = 'block';
+        explanationDiv.textContent = 'Loading topic explanation...';
+        try {
+            const res = await fetch('/ai-debate/explain', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({ topic })
+            });
+            const data = await res.json();
+            if (data && data.explanation) {
+                explanationDiv.textContent = data.explanation;
+                if ('speechSynthesis' in window) {
+                    const utter = new SpeechSynthesisUtterance(data.explanation);
+                    utter.rate = 1;
+                    utter.pitch = 1;
+                    utter.lang = 'en-US';
+                    utter.onend = function() {};
+                    utter.onerror = function() {};
+                    window.speechSynthesis.speak(utter);
+                }
+            } else {
+                explanationDiv.textContent = 'Could not fetch topic explanation.';
+            }
+        } catch (err) {
+            explanationDiv.textContent = 'Could not fetch topic explanation.';
+        }
+    });
 
-            if (step % 2 !== 0) step++;
+    async function handleTurnComplete() {
+        step++;
+        updateRoundIndicator();
 
-            fetchStep();
-        }
+        // --- OLD LOGIC REMOVED ---
+        // The check for `step % 2 === 0` and showing the modal is gone.
+        // --- END OLD LOGIC ---
 
-        function showSubtopicModal(subtopics) {
-            const modal = document.getElementById('subtopicModal');
-            const list = document.getElementById('subtopicList');
-            list.innerHTML = '';
+        if (step < maxSteps && !stopped) {
+            setTimeout(fetchStep, 500);
+        } else {
+            setDebateStatus('Debate finished!');
+            speak('The debate has concluded. The judge will now announce the winner.');
+            topicInput.disabled = false;
+            startBtn.disabled = true;
+            stopBtn.disabled = true;
+            getDebateWinner();
+            alphaDebater.classList.remove('speaking');
+            betaDebater.classList.remove('speaking');
+            updateRoundIndicator();
+        }
+    }
 
-            subtopics.forEach(topic => {
-                const btn = document.createElement('button');
-                btn.className = 'subtopic-btn';
-                btn.textContent = topic.text || topic;
-                btn.onclick = () => {
-                    modal.style.display = 'none';
-                    handleSubtopicChoice(topic.text || topic);
-                };
-                list.appendChild(btn);
-            });
+    // This function is now called once at the start of the debate
+    async function fetchAllSubtopics(mainTopic) {
+        try {
+            const res = await fetch('/ai-debate/subtopics', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({ topic: mainTopic, num_subtopics: rounds }),
+            });
+            const data = await res.json();
+            return data.subtopics || [];
+        } catch (e) {
+            console.error('Error fetching subtopics:', e);
+            return [];
+        }
+    }
 
-            modal.style.display = 'flex';
-        }
+    // These two functions are no longer needed
+    // function handleSubtopicChoice(selected) { ... }
+    // function showSubtopicModal(subtopics) { ... }
 
-        function setDebateStatus(text) {
-            statusDiv.textContent = text;
-        }
+    function setDebateStatus(text) {
+        statusDiv.textContent = text;
+    }
 
-        function showLoader(show, label) {
-            centerLoader.style.display = show ? 'flex' : 'none';
-            loaderLabel.textContent = label || 'AI is thinking...';
-        }
+    function showLoader(show, label) {
+        centerLoader.style.display = show ? 'flex' : 'none';
+        loaderLabel.textContent = label || 'AI is thinking...';
+    }
 
-        function showWinner() {
-            const winner = Math.random() < 0.5 ? `🏆 Winner: ${alphaName} (Pro)` : `🏆 Winner: ${betaName} (Con)`;
-            winnerBox.textContent = winner;
-            winnerBox.style.display = 'block';
-            playSound('winner');
-            launchConfetti();
-        }
+    function showWinner() {
+        const winner = Math.random() < 0.5 ? `🏆 Winner: ${alphaName} (Pro)` : `🏆 Winner: ${betaName} (Con)`;
+        winnerBox.textContent = winner;
+        winnerBox.style.display = 'block';
+        playSound('winner');
+        launchConfetti();
+    }
 
-        function setSpeakingDebater(isAlpha) {
-            if (isAlpha) {
-                alphaDebater.classList.add('speaking');
-                betaDebater.classList.remove('speaking');
-                playSound('turn');
-                document.getElementById('alphaAvatarIcon').style.display = 'none';
-                document.getElementById('alphaAvatarGif').style.display = 'block';
-                document.getElementById('betaAvatarIcon').style.display = 'block';
-                document.getElementById('betaAvatarGif').style.display = 'none';
-            } else {
-                betaDebater.classList.add('speaking');
-                alphaDebater.classList.remove('speaking');
-                playSound('turn');
-                document.getElementById('betaAvatarIcon').style.display = 'none';
-                document.getElementById('betaAvatarGif').style.display = 'block';
-                document.getElementById('alphaAvatarIcon').style.display = 'block';
-                document.getElementById('alphaAvatarGif').style.display = 'none';
-            }
-        }
+    function setSpeakingDebater(isAlpha) {
+        if (isAlpha) {
+            alphaDebater.classList.add('speaking');
+            betaDebater.classList.remove('speaking');
+            playSound('turn');
+            document.getElementById('alphaAvatarIcon').style.display = 'none';
+            document.getElementById('alphaAvatarGif').style.display = 'block';
+            document.getElementById('betaAvatarIcon').style.display = 'block';
+            document.getElementById('betaAvatarGif').style.display = 'none';
+        } else {
+            betaDebater.classList.add('speaking');
+            alphaDebater.classList.remove('speaking');
+            playSound('turn');
+            document.getElementById('betaAvatarIcon').style.display = 'none';
+            document.getElementById('betaAvatarGif').style.display = 'block';
+            document.getElementById('alphaAvatarIcon').style.display = 'block';
+            document.getElementById('alphaAvatarGif').style.display = 'none';
+        }
+    }
 
-        function updateRoundIndicator() {
-            const currentRound = Math.floor(step / 2) + 1;
-            const totalRounds = rounds;
-            if (step < maxSteps) {
-                roundIndicator.textContent = `Round ${currentRound} of ${totalRounds}`;
-            } else {
-                roundIndicator.textContent = 'Reflection';
-            }
-        }
+    function announceSpeaker(isAlpha) {
+        if (isAlpha) {
+            return 'Now your turn, Alpha.';
+        } else {
+            return 'Now your turn, Beta.';
+        }
+    }
 
-        async function fetchStep() {
-            if (stopped) return;
-            if (isDebatePaused) return;
+    function speak(text, callback) {
+        if ('speechSynthesis' in window) {
+            window.speechSynthesis.cancel();
+            const utterance = new SpeechSynthesisUtterance(text);
+            
+            utterance.rate = 1;
+            utterance.pitch = 1;
+            utterance.lang = 'en-US';
 
-            if (newTopic) {
-                topic = newTopic;
-                debateTopicSpan.textContent = topic;
-                newTopic = null;
-            }
+            utterance.onend = () => {
+                if (callback) {
+                    callback();
+                }
+            };
+            utterance.onerror = () => {
+                console.error('Speech synthesis error.');
+                if (callback) {
+                    callback();
+                }
+            };
 
-            const isAlpha = step % 2 === 0;
-            setDebateStatus((isAlpha ? alphaName : betaName) + ' is speaking...');
-            setSpeakingDebater(isAlpha);
-            showLoader(true, (isAlpha ? alphaName : betaName) + ' is thinking...');
-            updateRoundIndicator();
+            window.speechSynthesis.speak(utterance);
+        } else {
+            // Fallback for browsers without speech synthesis
+            if (callback) {
+                callback();
+            }
+        }
+    }
 
-            const res = await fetch('/ai-debate/step', {
-                method: 'POST',
-                headers: { 'Content-Type': 'application/json' },
-                body: JSON.stringify({ topic, history, step, alphaName, betaName, rounds })
-            });
-            const data = await res.json();
-            showLoader(false);
-            if (data && data.text) {
-                console.log('Debate turn text:', data.text);
-                if (isAlpha && alphaWindow) {
-                    alphaWindow.postMessage({
-                        type: 'alphaTurn', // Fixed from 'alphaTurns'
-                        text: data.text,
-                        alphaName
-                    }, '*');
-                    responseTimeout = setTimeout(() => {
-                        console.warn('AI response timeout — forcing next turn.');
-                        handleTurnComplete();
-                    }, 30000);
-                } 
-                else if (betaWindow && !isAlpha) {
-                    betaWindow.postMessage({
-                        type: 'betaTurn',
-                        text: data.text,
-                        step,
-                        betaName
-                    }, '*');
-                    responseTimeout = setTimeout(() => {
-                        console.warn('AI response timeout — forcing next turn.');
-                        handleTurnComplete();
-                    }, 30000);
-                }
-                history.push({ role: 'assistant', content: data.text });
-                broadcastStateUpdate();
-                const progress = Math.min((step + 1) / maxSteps, 1);
-                document.getElementById('debateProgressBar').style.width = (progress * 100) + '%';
-            } else {
-                setDebateStatus('Error: Could not get response.');
-                startBtn.disabled = false;
-                stopBtn.disabled = true;
-                getDebateWinner();
-                alphaDebater.classList.remove('speaking');
-                betaDebater.classList.remove('speaking');
-                updateRoundIndicator();
-            }
-        }
+    function updateRoundIndicator() {
+        const currentRound = Math.floor(step / 2) + 1;
+        const totalRounds = rounds;
+        if (step < maxSteps) {
+            roundIndicator.textContent = `Round ${currentRound} of ${totalRounds}`;
+        } else {
+            roundIndicator.textContent = 'Reflection';
+        }
+    }
 
-        async function getDebateWinner() {
-            try {
-                const res = await fetch('/ai-debate/judge', {
-                    method: 'POST',
-                    headers: { 'Content-Type': 'application/json' },
-                    body: JSON.stringify({
-                        alphaName,
-                        betaName,
-                        transcript: history.map(h => h.content),
-                        topic
-                    })
-                });
-                const data = await res.json();
-                if (data && data.winner) {
-                    winnerBox.textContent = `🏆 Winner: ${data.winner}`;
-                    winnerBox.style.display = 'block';
-                    playSound('winner');
-                    launchConfetti();
-                    document.getElementById('winnerModalTitle').textContent = `🏆 Winner: ${data.winner}`;
-                    document.getElementById('winnerModalReason').textContent = data.reason ? `Why: ${data.reason}` : '';
-                    let ratingsHtml = '';
-                    if (data.ratings) {
-                        ratingsHtml = 'Ratings:';
-                        for (const [name, rating] of Object.entries(data.ratings)) {
-                            ratingsHtml += `<br><span style='color:#fff;'>${name}:</span> ${rating}`;
-                        }
-                    }
-                    document.getElementById('winnerModalRatings').innerHTML = ratingsHtml;
-                    document.getElementById('winnerModal').style.display = 'flex';
-                    document.getElementById('closeWinnerModal').onclick = function() {
-                        document.getElementById('winnerModal').style.display = 'none';
-                    };
-                } else {
-                    winnerBox.textContent = '🏆 Winner: Could not determine.';
-                    winnerBox.style.display = 'block';
-                }
-            } catch (e) {
-                winnerBox.textContent = '🏆 Winner: Could not determine.';
-                winnerBox.style.display = 'block';
-            }
-        }
-        function openAlpha() {
-            alphaWindow = window.open(`/ai-debate/alphaView?session=${sessionId}`, 'alphaWindow');
-        }
+    async function fetchStep() {
+        if (stopped) return;
 
-        function openBeta() {
-            betaWindow = window.open(`/ai-debate/betaView?session=${sessionId}`, 'betaWindow');
-        }
-        
-        startBtn.addEventListener('click', function() {
-            if (!alphaReady || !betaReady) {
-                setDebateStatus('Please open both Alpha and Beta views and click "Join Debate" before starting.');
-                return;
-            }
+        const currentTopicIndex = Math.floor(step / 2);
+        const currentTopic = subtopicsList[currentTopicIndex];
 
-            const isRestart = (history.length === 0);
+        if (!currentTopic) {
+            console.error("No subtopic found for this round. Ending debate.");
+            handleTurnComplete();
+            return;
+        }
 
-            startBtn.disabled = true;
-            stopBtn.disabled = false;
+        const isAlpha = step % 2 === 0;
+        const speakerName = isAlpha ? alphaName : betaName;
 
-            if (isRestart) {
-                alphaTurns.innerHTML = '';
-                betaTurns.innerHTML = '';
-                winnerBox.style.display = 'none';
-                history = [];
-                step = 0;
-            }
+        // A single, asynchronous function to manage the turn sequence
+        const startTurnSequence = () => {
+            // Step 1: Announce the new topic if it's the start of a round.
+            if (step % 2 === 0) {
+                setDebateStatus(`Round ${currentTopicIndex + 1}: ${currentTopic}`);
+                speak(`The topic for this round is: ${currentTopic}`, () => {
+                    // Step 2 (Callback): Announce who is speaking.
+                    speak(announceSpeaker(isAlpha), () => {
+                        // Step 3 (Callback): Emit the startTurn event to the debater.
+                        socket.emit('startTurn', {
+                            sessionId: sessionId,
+                            role: isAlpha ? 'alpha' : 'beta',
+                            text: history[step]?.content || '', // Use history to prevent race condition
+                            name: speakerName
+                        });
+                    });
+                });
+            } else {
+                // If it's not the start of a round (i.e., Beta's turn), just announce the speaker and start the turn.
+                speak(announceSpeaker(isAlpha), () => {
+                    socket.emit('startTurn', {
+                        sessionId: sessionId,
+                        role: isAlpha ? 'alpha' : 'beta',
+                        text: history[step]?.content || '',
+                        name: speakerName
+                    });
+                });
+            }
+        };
+        
+        // You now need to get the response from your AI *before* you start the speaking sequence
+        setDebateStatus((isAlpha ? alphaName : betaName) + ' is thinking...');
+        setSpeakingDebater(isAlpha);
+        showLoader(true, (isAlpha ? alphaName : betaName) + ' is thinking...');
+        updateRoundIndicator();
 
-            stopped = false;
-            setDebateStatus('');
-            document.getElementById('debateProgressBar').style.width = `${(step / (rounds * 2)) * 100}%`;
-            updateRoundIndicator();
-            reflectionTurns.innerHTML = '';
+        const res = await fetch('/ai-debate/step', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ topic, history, step, alphaName, betaName, rounds })
+        });
+        const data = await res.json();
+        showLoader(false);
+        
+        if (data && data.text) {
+            console.log('Debate turn text:', data.text);
+            history.push({ role: 'assistant', content: data.text });
+            broadcastStateUpdate();
+            const progress = Math.min((step + 1) / maxSteps, 1);
+            document.getElementById('debateProgressBar').style.width = (progress * 100) + '%';
+            
+            // Call the sequence after the data is ready
+            startTurnSequence();
+        } else {
+            setDebateStatus('Error: Could not get response.');
+            startBtn.disabled = false;
+            stopBtn.disabled = true;
+            getDebateWinner();
+            alphaDebater.classList.remove('speaking');
+            betaDebater.classList.remove('speaking');
+            updateRoundIndicator();
+        }
+    }
 
-            document.getElementById('topicExplanation').style.display = 'none';
-            document.getElementById('alphaAvatarIcon').style.display = 'block';
-            document.getElementById('alphaAvatarGif').style.display = 'none';
-            document.getElementById('betaAvatarIcon').style.display = 'block';
-            document.getElementById('betaAvatarGif').style.display = 'none';
+    async function getDebateWinner() {
+        try {
+            const res = await fetch('/ai-debate/judge', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({
+                    alphaName,
+                    betaName,
+                    transcript: history.map(h => h.content),
+                    topic
+                })
+            });
+            const data = await res.json();
+            if (data && data.winner) {
+                winnerBox.textContent = `🏆 Winner: ${data.winner}`;
+                winnerBox.style.display = 'block';
+                playSound('winner');
+                launchConfetti();
+                document.getElementById('winnerModalTitle').textContent = `🏆 Winner: ${data.winner}`;
+                document.getElementById('winnerModalReason').textContent = data.reason ? `Why: ${data.reason}` : '';
+                let ratingsHtml = '';
+                if (data.ratings) {
+                    ratingsHtml = 'Ratings:';
+                    for (const [name, rating] of Object.entries(data.ratings)) {
+                        ratingsHtml += `<br><span style='color:#fff;'>${name}:</span> ${rating}`;
+                    }
+                }
+                document.getElementById('winnerModalRatings').innerHTML = ratingsHtml;
+                document.getElementById('winnerModal').style.display = 'flex';
+                document.getElementById('closeWinnerModal').onclick = function() {
+                    document.getElementById('winnerModal').style.display = 'none';
+                };
+            } else {
+                winnerBox.textContent = '🏆 Winner: Could not determine.';
+                winnerBox.style.display = 'block';
+            }
+        } catch (e) {
+            winnerBox.textContent = '🏆 Winner: Could not determine.';
+            winnerBox.style.display = 'block';
+        }
+    }
 
-            rounds = parseInt(document.getElementById('roundsInput').value) || 3;
-            maxSteps = rounds * 2;
-            topicInput.disabled = true;
-            fetchStep();
-        });
+    function openAlpha() {
+        alphaWindow = window.open(`/ai-debate/alphaView?session=${sessionId}`, 'alphaWindow');
+    }
 
-        stopBtn.addEventListener('click', function() {
-            stopped = true;
-            setDebateStatus('Debate stopped.');
-            topicInput.disabled = false;
-            startBtn.disabled = false;
-            stopBtn.disabled = true;
-            showLoader(false);
-            showWinner();
-            alphaDebater.classList.remove('speaking');
-            betaDebater.classList.remove('speaking');
-            updateRoundIndicator();
-        });
-        const resetBtn = document.getElementById('resetDebateBtn');
-        resetBtn.addEventListener('click', () => {
-            step = 0;
-            stopped = true;
-            history = [];
-            rounds = 3;
-            maxSteps = rounds * 2;
-            newTopic = null;
-            isDebatePaused = false;
-            sessionRestored = false;
-            document.getElementById('roundsInput').value = '3';
-            topicInput.disabled = false;
-            topicInput.value = '';
-            alphaNameInput.disabled = false;
-            betaNameInput.disabled = false;
-            alphaNameInput.value = '';
-            betaNameInput.value = '';
-            debateTopicSpan.textContent = '';
-            debateTitle.innerHTML = '';
-            socket.emit('resetSession', sessionId);
-            winnerBox.style.display = 'none';
-            alphaTurns.innerHTML = '';
-            betaTurns.innerHTML = '';
-            reflectionTurns.innerHTML = '';
-            document.getElementById('debateProgressBar').style.width = '0%';
-            document.getElementById('winnerModal').style.display = 'none';
-            document.getElementById('topicExplanation').style.display = 'none';
-            setDebateStatus('Debate reset. Ready to begin a new one.');
-            localStorage.removeItem('sessionId');
-            sessionId = null;
-        });
+    function openBeta() {
+        betaWindow = window.open(`/ai-debate/betaView?session=${sessionId}`, 'betaWindow');
+    }
 
-        topicInput.setAttribute('aria-label', 'Debate topic');
-        alphaNameInput.setAttribute('aria-label', 'Alpha debater name');
-        betaNameInput.setAttribute('aria-label', 'Beta debater name');
-        startBtn.setAttribute('aria-label', 'Start Debate');
-        stopBtn.setAttribute('aria-label', 'Stop Debate');
-        topicForm.setAttribute('aria-label', 'Debate configuration form');
+    startBtn.addEventListener('click', async function() {
+        if (!alphaReady || !betaReady) {
+            setDebateStatus('Please open both Alpha and Beta views and click "Join Debate" before starting.');
+            return;
+        }
 
-        function showWelcomeBanner() {
-            const banner = document.getElementById('welcomeBanner');
-            banner.style.display = 'block';
-            document.getElementById('closeWelcomeBanner').onclick = function() {
-                banner.style.display = 'none';
-            };
-        }
-        function showWelcomeGif() {
-            document.getElementById('welcomeGifContainer').style.display = 'block';
-        }
-        function hideWelcomeGif() {
-            document.getElementById('welcomeGifContainer').style.display = 'none';
-        }
-        function trySpeakWelcome() {
-            if ('speechSynthesis' in window && document.hasFocus()) {
-                try {
-                    window.speechSynthesis.cancel();
-                    const welcome = new SpeechSynthesisUtterance('Welcome to Debate. Experience a live, intelligent debate on any topic you choose.');
-                    welcome.rate = 1;
-                    welcome.pitch = 1;
-                    welcome.lang = 'en-US';
-                    showWelcomeGif();
-                    window.speechSynthesis.speak(welcome);
-                    welcome.onend = function() { hideWelcomeGif(); };
-                    welcome.onerror = function() { showWelcomeBanner(); hideWelcomeGif(); };
-                } catch (e) {
-                    showWelcomeBanner();
-                    showWelcomeGif();
-                    setTimeout(hideWelcomeGif, 3500);
-                }
-            } else {
-                showWelcomeBanner();
-                showWelcomeGif();
-                setTimeout(hideWelcomeGif, 3500);
-            }
-        }
-        let welcomeSpoken = false;
-        function speakWelcome() {
-            if (welcomeSpoken) return;
-            welcomeSpoken = true;
-            trySpeakWelcome();
-            window.removeEventListener('click', speakWelcome);
-            window.removeEventListener('keydown', speakWelcome);
-            window.removeEventListener('focus', speakWelcome, true);
-        }
-        window.addEventListener('click', speakWelcome);
-        window.addEventListener('keydown', speakWelcome);
-        window.addEventListener('focus', speakWelcome, true);
+        const isRestart = (history.length === 0);
 
-        const sounds = {
-            turn: new Audio('https://cdn.pixabay.com/audio/2022/07/26/audio_124bfae5b2.mp3'),
-            winner: new Audio('https://cdn.pixabay.com/audio/2022/03/15/audio_115b9b7b7b.mp3'),
-        };
-        function playSound(type) {
-            if (sounds[type]) {
-                sounds[type].currentTime = 0;
-                try {
-                    sounds[type].play();
-                } catch (e) {
-                }
-            }
-        }
-        function launchConfetti() {
-            const canvas = document.getElementById('confettiCanvas');
-            const ctx = canvas.getContext('2d');
-            const W = window.innerWidth;
-            const H = 120;
-            canvas.width = W;
-            canvas.height = H;
-            const confettiCount = 60;
-            const confetti = [];
-            for (let i = 0; i < confettiCount; i++) {
-                confetti.push({
-                    x: Math.random() * W,
-                    y: Math.random() * H * 0.5,
-                    r: 6 + Math.random() * 8,
-                    d: 10 + Math.random() * 20,
-                    color: `hsl(${Math.random()*360},80%,70%)`,
-                    tilt: Math.random() * 10 - 5,
-                    tiltAngle: 0,
-                    tiltAngleInc: (Math.random() * 0.07) + 0.05
-                });
-            }
-            let frame = 0;
-            function draw() {
-                ctx.clearRect(0, 0, W, H);
-                for (let i = 0; i < confetti.length; i++) {
-                    const c = confetti[i];
-                    ctx.beginPath();
-                    ctx.ellipse(c.x, c.y, c.r, c.r*0.4, c.tilt, 0, 2 * Math.PI);
-                    ctx.fillStyle = c.color;
-                    ctx.fill();
-                }
-                update();
-            }
-            function update() {
-                for (let i = 0; i < confetti.length; i++) {
-                    const c = confetti[i];
-                    c.y += Math.cos(frame/10 + c.d) + 1 + c.r/4;
-                    c.x += Math.sin(frame/20) * 2;
-                    c.tiltAngle += c.tiltAngleInc;
-                    c.tilt = Math.sin(c.tiltAngle) * 15;
-                    if (c.y > H) {
-                        c.x = Math.random() * W;
-                        c.y = -10;
-                    }
-                }
-                frame++;
-            }
-            let anim = setInterval(draw, 16);
-            setTimeout(() => { clearInterval(anim); ctx.clearRect(0,0,W,H); }, 1800);
-        }
+        startBtn.disabled = true;
+        stopBtn.disabled = false;
 
-        socket.on('sessionState', (data) => {
-            if (!sessionRestored) {
-                sessionRestored = true;
+        if (isRestart) {
+            alphaTurns.innerHTML = '';
+            betaTurns.innerHTML = '';
+            winnerBox.style.display = 'none';
+            history = [];
+            step = 0;
+        }
 
-                if (data.topic) {
-                    topic = data.topic;
-                    topicInput.value = topic;
-                    debateTopicSpan.textContent = topic;
-                }
-                if (data.alphaName) {
-                    alphaName = data.alphaName;
-                    alphaNameInput.value = alphaName;
-                    alphaNameSpan.textContent = alphaName;
-                    alphaNameSpan2.textContent = alphaName;
-                    alphaTitle.textContent = `${alphaName} (Pro)`;
-                    alphaAvatar.title = alphaName;
-                }
-                if (data.betaName) {
-                    betaName = data.betaName;
-                    betaNameInput.value = betaName;
-                    betaNameSpan.textContent = betaName;
-                    betaNameSpan2.textContent = betaName;
-                    betaTitle.textContent = `${betaName} (Con)`;
-                    betaAvatar.title = betaName;
-                }
+        stopped = false;
+        setDebateStatus('');
+        document.getElementById('debateProgressBar').style.width = `${(step / (rounds * 2)) * 100}%`;
+        updateRoundIndicator();
+        reflectionTurns.innerHTML = '';
 
-                if (data.rounds) rounds = data.rounds;
-                if (data.maxSteps) maxSteps = data.maxSteps;
-                if (data.step !== undefined) step = data.step;
-                if (data.history) {
-                    history = data.history;
-                    alphaTurns.innerHTML = '';
-                    betaTurns.innerHTML = '';
-                    history.forEach((h, index) => {
-                        const div = document.createElement('div');
-                        div.textContent = h.content;
-                        if (index % 2 === 0) alphaTurns.appendChild(div);
-                        else betaTurns.appendChild(div);
-                    });
-                }
+        document.getElementById('topicExplanation').style.display = 'none';
+        document.getElementById('alphaAvatarIcon').style.display = 'block';
+        document.getElementById('alphaAvatarGif').style.display = 'none';
+        document.getElementById('betaAvatarIcon').style.display = 'block';
+        document.getElementById('betaAvatarGif').style.display = 'none';
 
-                updateRoundIndicator();
+        rounds = parseInt(document.getElementById('roundsInput').value) || 3;
+        maxSteps = rounds * 2;
+        topicInput.disabled = true;
 
-                if (step > 0 && step < maxSteps && isModerator) {
-                    const resume = confirm("Resume previous debate?");
-                    if (resume) fetchStep();
-                } else if (step >= maxSteps) {
-                    setDebateStatus('Debate finished!');
-                    showWinner();
-                }
-            }
-        });
+        // --- NEW LOGIC TO GENERATE ALL SUBTOPICS AT THE START ---
+        setDebateStatus('Generating subtopics...');
+        subtopicsList = await fetchAllSubtopics(topic);
+        if (subtopicsList.length === 0) {
+            setDebateStatus('Could not generate subtopics. Ending debate.');
+            startBtn.disabled = false;
+            stopBtn.disabled = true;
+            return;
+        }
+        setDebateStatus('Subtopics generated. Debate beginning...');
+        // --- END NEW LOGIC ---
 
-        socket.on('sessionUpdated', (data) => {
-            if (data.topic) topicInput.value = data.topic;
-            if (data.alphaName) alphaNameInput.value = data.alphaName;
-            if (data.betaName) betaNameInput.value = data.betaName;
-            if (data.step !== undefined) step = data.step;
-            if (data.rounds !== undefined) rounds = data.rounds;
-            if (data.maxSteps !== undefined) maxSteps = data.maxSteps;
-            if (data.history) {
-                const newTurn = data.history[data.history.length - 1];
-                const div = document.createElement('div');
-                div.textContent = newTurn.content;
-                if (data.history.length % 2 === 1) betaTurns.appendChild(div);
-                else alphaTurns.appendChild(div);
-            }
-        });
+        fetchStep();
+    });
 
-        function broadcastStateUpdate() {
-            socket.emit('updateState', {
-                sessionId,
-                data: {
-                    topic,
-                    alphaName,
-                    betaName,
-                    rounds,
-                    maxSteps,
-                    step,
-                    history
-                }
-            });
-        }
+    stopBtn.addEventListener('click', function() {
+        stopped = true;
+        setDebateStatus('Debate stopped.');
+        topicInput.disabled = false;
+        startBtn.disabled = false;
+        stopBtn.disabled = true;
+        showLoader(false);
+        showWinner();
+        alphaDebater.classList.remove('speaking');
+        betaDebater.classList.remove('speaking');
+        updateRoundIndicator();
+    });
 
-        function copyLink(role) {
-            const input = role === 'alpha'
-                ? document.getElementById('alphaLink')
-                : document.getElementById('betaLink');
+    const resetBtn = document.getElementById('resetDebateBtn');
+    resetBtn.addEventListener('click', () => {
+        step = 0;
+        stopped = true;
+        history = [];
+        rounds = 3;
+        maxSteps = rounds * 2;
+        newTopic = null;
+        subtopicsList = []; // Reset subtopics list
+        isDebatePaused = false;
+        sessionRestored = false;
+        document.getElementById('roundsInput').value = '3';
+        topicInput.disabled = false;
+        topicInput.value = '';
+        alphaNameInput.disabled = false;
+        betaNameInput.disabled = false;
+        alphaNameInput.value = '';
+        betaNameInput.value = '';
+        debateTopicSpan.textContent = '';
+        debateTitle.innerHTML = '';
+        socket.emit('resetSession', sessionId);
+        winnerBox.style.display = 'none';
+        alphaTurns.innerHTML = '';
+        betaTurns.innerHTML = '';
+        reflectionTurns.innerHTML = '';
+        document.getElementById('debateProgressBar').style.width = '0%';
+        document.getElementById('winnerModal').style.display = 'none';
+        document.getElementById('topicExplanation').style.display = 'none';
+        setDebateStatus('Debate reset. Ready to begin a new one.');
+        localStorage.removeItem('sessionId');
+        sessionId = null;
+    });
 
-            navigator.clipboard.writeText(input.value).then(() => {
-                const status = document.getElementById(role + 'Status');
-                status.textContent = '✅ Link copied!';
-                setTimeout(() => {
-                    status.textContent = status.dataset.connected === 'true' ? `✅ ${capitalize(role)} connected` : '❌ Not connected';
-                }, 1500);
-            });
-            input.setSelectionRange(0, 99999);
-            document.execCommand('copy');
+    topicInput.setAttribute('aria-label', 'Debate topic');
+    alphaNameInput.setAttribute('aria-label', 'Alpha debater name');
+    betaNameInput.setAttribute('aria-label', 'Beta debater name');
+    startBtn.setAttribute('aria-label', 'Start Debate');
+    stopBtn.setAttribute('aria-label', 'Stop Debate');
+    topicForm.setAttribute('aria-label', 'Debate configuration form');
 
-            const status = document.getElementById(role + 'Status');
-            status.textContent = '✅ Link copied!';
-            setTimeout(() => {
-                status.textContent = status.dataset.connected === 'true' ? `✅ ${capitalize(role)} connected` : '❌ Not connected';
-            }, 1500);
-        }
+    function showWelcomeBanner() {
+        const banner = document.getElementById('welcomeBanner');
+        banner.style.display = 'block';
+        document.getElementById('closeWelcomeBanner').onclick = function() {
+            banner.style.display = 'none';
+        };
+    }
+    function showWelcomeGif() {
+        document.getElementById('welcomeGifContainer').style.display = 'block';
+    }
+    function hideWelcomeGif() {
+        document.getElementById('welcomeGifContainer').style.display = 'none';
+    }
+    function trySpeakWelcome() {
+        if ('speechSynthesis' in window && document.hasFocus()) {
+            try {
+                window.speechSynthesis.cancel();
+                const welcome = new SpeechSynthesisUtterance('Welcome to Debate. Experience a live, intelligent debate on any topic you choose.');
+                welcome.rate = 1;
+                welcome.pitch = 1;
+                welcome.lang = 'en-US';
+                showWelcomeGif();
+                window.speechSynthesis.speak(welcome);
+                welcome.onend = function() { hideWelcomeGif(); };
+                welcome.onerror = function() { showWelcomeBanner(); hideWelcomeGif(); };
+            } catch (e) {
+                showWelcomeBanner();
+                showWelcomeGif();
+                setTimeout(hideWelcomeGif, 3500);
+            }
+        } else {
+            showWelcomeBanner();
+            showWelcomeGif();
+            setTimeout(hideWelcomeGif, 3500);
+        }
+    }
 
-        function capitalize(word) {
-            return word.charAt(0).toUpperCase() + word.slice(1);
-        }
-    </script>
+    let welcomeSpoken = false;
+    function speakWelcome() {
+        if (welcomeSpoken) return;
+        welcomeSpoken = true;
+        trySpeakWelcome();
+        window.removeEventListener('click', speakWelcome);
+        window.removeEventListener('keydown', speakWelcome);
+        window.removeEventListener('focus', speakWelcome, true);
+    }
+    window.addEventListener('click', speakWelcome);
+    window.addEventListener('keydown', speakWelcome);
+    window.addEventListener('focus', speakWelcome, true);
+
+    const sounds = {
+        turn: new Audio('https://cdn.pixabay.com/audio/2022/07/26/audio_124bfae5b2.mp3'),
+        winner: new Audio('https://cdn.pixabay.com/audio/2022/03/15/audio_115b9b7b7b.mp3'),
+    };
+
+    function playSound(type) {
+        if (sounds[type]) {
+            sounds[type].currentTime = 0;
+            try {
+                sounds[type].play();
+            } catch (e) {
+            }
+        }
+    }
+
+    function launchConfetti() {
+        const canvas = document.getElementById('confettiCanvas');
+        const ctx = canvas.getContext('2d');
+        const W = window.innerWidth;
+        const H = 120;
+        canvas.width = W;
+        canvas.height = H;
+        const confettiCount = 60;
+        const confetti = [];
+        for (let i = 0; i < confettiCount; i++) {
+            confetti.push({
+                x: Math.random() * W,
+                y: Math.random() * H * 0.5,
+                r: 6 + Math.random() * 8,
+                d: 10 + Math.random() * 20,
+                color: `hsl(${Math.random()*360},80%,70%)`,
+                tilt: Math.random() * 10 - 5,
+                tiltAngle: 0,
+                tiltAngleInc: (Math.random() * 0.07) + 0.05
+            });
+        }
+        let frame = 0;
+        function draw() {
+            ctx.clearRect(0, 0, W, H);
+            for (let i = 0; i < confetti.length; i++) {
+                const c = confetti[i];
+                ctx.beginPath();
+                ctx.ellipse(c.x, c.y, c.r, c.r*0.4, c.tilt, 0, 2 * Math.PI);
+                ctx.fillStyle = c.color;
+                ctx.fill();
+            }
+            update();
+        }
+        function update() {
+            for (let i = 0; i < confetti.length; i++) {
+                const c = confetti[i];
+                c.y += Math.cos(frame/10 + c.d) + 1 + c.r/4;
+                c.x += Math.sin(frame/20) * 2;
+                c.tiltAngle += c.tiltAngleInc;
+                c.tilt = Math.sin(c.tiltAngle) * 15;
+                if (c.y > H) {
+                    c.x = Math.random() * W;
+                    c.y = -10;
+                }
+            }
+            frame++;
+        }
+        let anim = setInterval(draw, 16);
+        setTimeout(() => { clearInterval(anim); ctx.clearRect(0,0,W,H); }, 1800);
+    }
+
+    socket.on('sessionState', (data) => {
+        if (!sessionRestored) {
+            sessionRestored = true;
+            if (data.topic) {
+                topic = data.topic;
+                topicInput.value = topic;
+                debateTopicSpan.textContent = topic;
+            }
+            if (data.alphaName) {
+                alphaName = data.alphaName;
+                alphaNameInput.value = alphaName;
+                alphaNameSpan.textContent = alphaName;
+                alphaNameSpan2.textContent = alphaName;
+                alphaTitle.textContent = `${alphaName} (Pro)`;
+                alphaAvatar.title = alphaName;
+            }
+            if (data.betaName) {
+                betaName = data.betaName;
+                betaNameInput.value = betaName;
+                betaNameSpan.textContent = betaName;
+                betaNameSpan2.textContent = betaName;
+                betaTitle.textContent = `${betaName} (Con)`;
+                betaAvatar.title = betaName;
+            }
+
+            if (data.rounds) rounds = data.rounds;
+            if (data.maxSteps) maxSteps = data.maxSteps;
+            if (data.step !== undefined) step = data.step;
+            if (data.history) {
+                history = data.history;
+                alphaTurns.innerHTML = '';
+                betaTurns.innerHTML = '';
+                history.forEach((h, index) => {
+                    const div = document.createElement('div');
+                    div.textContent = h.content;
+                    if (index % 2 === 0) alphaTurns.appendChild(div);
+                    else betaTurns.appendChild(div);
+                });
+            }
+
+            updateRoundIndicator();
+
+            if (step > 0 && step < maxSteps && isModerator) {
+                const resume = confirm("Resume previous debate?");
+                if (resume) fetchStep();
+            } else if (step >= maxSteps) {
+                setDebateStatus('Debate finished!');
+                showWinner();
+            }
+        }
+    });
+
+    socket.on('sessionUpdated', (data) => {
+        if (data.topic) topicInput.value = data.topic;
+        if (data.alphaName) alphaNameInput.value = data.alphaName;
+        if (data.betaName) betaNameInput.value = data.betaName;
+        if (data.step !== undefined) step = data.step;
+        if (data.rounds !== undefined) rounds = data.rounds;
+        if (data.maxSteps !== undefined) maxSteps = data.maxSteps;
+        if (data.history) {
+            const newTurn = data.history[data.history.length - 1];
+            const div = document.createElement('div');
+            div.textContent = newTurn.content;
+            if (data.history.length % 2 === 1) betaTurns.appendChild(div);
+            else alphaTurns.appendChild(div);
+        }
+    });
+
+    function broadcastStateUpdate() {
+        socket.emit('updateState', {
+            sessionId,
+            data: {
+                topic,
+                alphaName,
+                betaName,
+                rounds,
+                maxSteps,
+                step,
+                history
+            }
+        });
+    }
+
+    function copyLink(role) {
+        const input = role === 'alpha'
+            ? document.getElementById('alphaLink')
+            : document.getElementById('betaLink');
+
+        navigator.clipboard.writeText(input.value).then(() => {
+            const status = document.getElementById(role + 'Status');
+            status.textContent = '✅ Link copied!';
+            setTimeout(() => {
+                status.textContent = status.dataset.connected === 'true' ? `✅ ${capitalize(role)} connected` : '❌ Not connected';
+            }, 1500);
+        });
+        input.setSelectionRange(0, 99999);
+        document.execCommand('copy');
+
+        const status = document.getElementById(role + 'Status');
+        status.textContent = '✅ Link copied!';
+        setTimeout(() => {
+            status.textContent = status.dataset.connected === 'true' ? `✅ ${capitalize(role)} connected` : '❌ Not connected';
+        }, 1500);
+    }
+
+    function capitalize(word) {
+        return word.charAt(0).toUpperCase() + word.slice(1);
+    }
+</script>
 </body>
 </html>
