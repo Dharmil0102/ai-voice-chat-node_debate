@@ -865,6 +865,8 @@
     <script src="/socket.io/socket.io.js"></script>
     
     <script>
+    // Initialize variables
+    let isTurnProcessing = false;
     let newTopic = null; // This variable is no longer needed but kept for clarity.
     let topic = decodeURIComponent('<%= encodeURIComponent(topic) %>');
     let alphaName = 'Alpha';
@@ -968,8 +970,18 @@
     });
 
     socket.on('turnDone', ({ role }) => {
-        clearTimeout(responseTimeout);
-        handleTurnComplete();
+        // Check if the received 'role' matches the expected speaker for this step
+        const isAlphaTurn = step % 2 === 0;
+        const expectedRole = isAlphaTurn ? 'alpha' : 'beta';
+
+        if (role === expectedRole) {
+            console.log(`✅ Received correct turnDone from ${role}.`);
+            clearTimeout(responseTimeout);
+            handleTurnComplete();
+        } else {
+            // If the wrong debater finishes early, log and ignore the signal
+            console.log(`⚠️ Received early turnDone from ${role}. Ignoring.`);
+        }
     });
 
     topicForm.addEventListener('submit', async function(e) {
@@ -1054,14 +1066,15 @@
     });
 
     async function handleTurnComplete() {
+        if (isTurnProcessing) {
+            return;
+        }
+        isTurnProcessing = true;
         step++;
         updateRoundIndicator();
-
-        // --- OLD LOGIC REMOVED ---
-        // The check for `step % 2 === 0` and showing the modal is gone.
-        // --- END OLD LOGIC ---
-
         if (step < maxSteps && !stopped) {
+            // Set the lock to false before starting the next turn
+            isTurnProcessing = false;
             setTimeout(fetchStep, 500);
         } else {
             setDebateStatus('Debate finished!');
@@ -1073,6 +1086,7 @@
             alphaDebater.classList.remove('speaking');
             betaDebater.classList.remove('speaking');
             updateRoundIndicator();
+            isTurnProcessing = false; 
         }
     }
 
