@@ -3,11 +3,11 @@ const axios = require('axios');
 const OPENAI_API_KEY = process.env.OPENAI_API_KEY;
 
 // Base prompts with direct, assertive instructions
-const proSystemPrompt = (name, topic) => `You are a debater named ${name}. Your sole purpose is to argue that the following statement is TRUE and relevant: "${topic}". For each of your turns, you must present a new, distinct argument that proves your side. Be logical and persuasive. and keep it short.`;
+const proSystemPrompt = (name, topic) => `You are a debater named ${name}. Your sole purpose is to argue that the following statement is TRUE and relevant: "${topic}". For each of your turns, you must present a new, distinct argument that proves your side. Be logical and persuasive. speak for 30 seconds.`;
 
 // Beta (Con) must argue that the topic IS NOT true.
 // The key is the instruction to directly discredit the opponent's argument.
-const conSystemPrompt = (name, topic) => `You are a debater named ${name}. Your sole purpose is to argue that the following statement is NOT true and NOT relevant: "${topic}". For each turn, you must FIRST directly discredit the last point made by your opponent. Then, you must present a new argument that proves your side. Your tone is combative, logical, and assertive. and keep it short.`;
+const conSystemPrompt = (name, topic) => `You are a debater named ${name}. Your sole purpose is to argue that the following statement is NOT true and NOT relevant: "${topic}". For each turn, you must FIRST directly discredit the last point made by your opponent. Then, you must present a new argument that proves your side. Your tone is combative, logical, and assertive. speak for 30 seconds.`;
 
 async function getOpenAIResponse(systemPrompt, history) {
   try {
