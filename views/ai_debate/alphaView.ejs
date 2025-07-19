@@ -394,22 +394,43 @@ const socket = io();
 
 // Voice loading (triggered on join only)
 function loadVoicesAndAssign() {
-  const voices = speechSynthesis.getVoices();
-  if (voices.length > 0) {
-    voicesLoaded = true;
+    const voices = speechSynthesis.getVoices();
+    if (voices.length > 0) {
+        voicesLoaded = true;
 
-    const maleVoices = voices.filter(v =>
-      /male|david|mark|daniel|alex|fred|george|michael|paul/.test(v.name.toLowerCase())
-    );
+        // --- NEW LOGIC FOR PRIORITIZED FALLBACK ---
+        // 1. Create a prioritized list of preferred male voices
+        const preferredVoices = [
+            "alex", "daniel", "mark", "david", "paul",
+            "george", "michael", "fred", "ryan", "steve"
+        ];
 
-    selectedVoice = maleVoices.length > 0
-      ? maleVoices[Math.floor(Math.random() * maleVoices.length)]
-      : voices[Math.floor(Math.random() * voices.length)];
+        let foundVoice = null;
 
-    console.log('🎤 Assigned Alpha voice:', selectedVoice.name);
-  } else {
-    speechSynthesis.onvoiceschanged = loadVoicesAndAssign;
-  }
+        // 2. Loop through the preferred voices and assign the first one found
+        for (const name of preferredVoices) {
+            const match = voices.find(v => v.name.toLowerCase().includes(name));
+            if (match) {
+                foundVoice = match;
+                break; // Stop the loop once a voice is found
+            }
+        }
+
+        // 3. Assign the found voice or fall back to any male voice
+        if (foundVoice) {
+            selectedVoice = foundVoice;
+        } else {
+            // Fallback to any male voice if no preferred ones are available
+            const anyMaleVoice = voices.find(v => v.name.toLowerCase().includes("male"));
+            selectedVoice = anyMaleVoice || voices[Math.floor(Math.random() * voices.length)];
+        }
+        // --- END NEW LOGIC ---
+
+        console.log('🎤 Assigned Alpha voice:', selectedVoice.name);
+    } else {
+        // If voices aren't loaded yet, try again when they are.
+        speechSynthesis.onvoiceschanged = loadVoicesAndAssign;
+    }
 }
 
 // Start button logic
