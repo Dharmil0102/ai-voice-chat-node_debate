@@ -865,53 +865,16 @@
     <script src="/socket.io/socket.io.js"></script>
     
     <script>
-     const OFFLINE_DEBATE_DATA = {
-            topic: "The predominant effect of social media on society's mental health is negative.",
-            alphaName: "Alpha",
-            betaName: "Beta",
-            rounds: 3,
-            subtopics: [
-                "The effect of social media on individual self-esteem and body image.",
-                "The role of social media in fostering community and support networks.",
-                "Social media's impact on personal relationships and real-world interactions."
-            ],
-            transcript: [
-                // Round 1 - Subtopic: Self-Esteem
-                // Alpha's Turn 1 (Pro)
-                "The constant exposure to curated, idealized lives on social media platforms creates a pervasive culture of comparison that is profoundly damaging to mental health. Users are subjected to a never-ending highlight reel of others' successes, perfect appearances, and lavish experiences. This relentless stream of unattainable standards directly correlates with increased rates of anxiety, depression, and low self-esteem, especially among impressionable younger users who feel pressured to measure up to an unrealistic digital reality. This is a feedback loop of negative self-perception that is almost impossible to escape.",
-
-                // Beta's Turn 1 (Con)
-                "While social media can be a source of comparison, to claim it is the predominant cause of negative mental health is an oversimplification. This argument overlooks the fact that these platforms also provide invaluable opportunities for self-expression and sharing personal successes, which can actually boost confidence and foster a sense of personal accomplishment. For many, social media is a powerful tool to build and showcase a unique identity, allowing them to connect with like-minded individuals who validate their experiences and passions, ultimately fostering a stronger, more positive self-image.",
-
-                // Round 2 - Subtopic: Community & Support
-                // Alpha's Turn 2 (Pro)
-                "Despite its potential to foster community, the digital nature of social media often creates shallow, superficial connections that lack the depth and authenticity of real-world relationships. People may have hundreds of online friends, but this digital network fails to provide the true emotional support that comes from face-to-face interaction. The result is a profound paradox: we are more connected than ever, yet feelings of loneliness and social isolation are on the rise, proving that a virtual community is no substitute for authentic human connection in the long run.",
-
-                // Beta's Turn 2 (Con)
-                "Alpha's claim that digital connections are superficial fails to recognize that social media has become a vital lifeline for countless individuals, particularly those in marginalized communities or remote locations. These platforms connect them with supportive communities they might never find locally, providing a safe space to share their experiences and receive crucial emotional support. For many, these online bonds are not shallow but are deeply meaningful, serving as a powerful buffer against loneliness and a primary source of belonging and understanding.",
-
-                // Round 3 - Subtopic: Relationships
-                // Alpha's Turn 3 (Pro)
-                "The pervasive distraction of social media in our daily lives actively erodes personal relationships. We have all seen people at dinner tables or in family gatherings completely absorbed in their phones, displacing genuine conversation and creating a constant stream of interruptions. This behavior, normalized by social media, diminishes the quality and intimacy of our real-world interactions, making us less present and less engaged with the people who matter most, thus creating a tangible decline in the health of our personal relationships.",
-
-                // Beta's Turn 3 (Con)
-                "Alpha's argument overlooks the fact that social media allows people to maintain vital contact with distant friends and family, bridging geographical divides and strengthening bonds over time. It is an indispensable tool for staying connected in a mobile world. The platform itself is not responsible for negative habits; rather, it is a reflection of how users choose to prioritize their attention. When used mindfully, social media enhances and sustains relationships, acting as a powerful supplement to, not a replacement for, face-to-face interactions."
-            ],
-            winner: {
-                name: "Beta",
-                reason: "Beta's arguments were more compelling because they consistently countered Alpha's points directly and provided a more nuanced view of social media's role in a modern, interconnected society."
-            },
-            topicExplanation: "This debate explores whether the negative effects of social media on mental health outweigh its positive contributions to society."
-        };
+    // Initialize variables
     let isTurnProcessing = false;
     let newTopic = null; // This variable is no longer needed but kept for clarity.
-    let topic = OFFLINE_DEBATE_DATA.topic;
-    let alphaName = OFFLINE_DEBATE_DATA.alphaName;
-    let betaName = OFFLINE_DEBATE_DATA.betaName;
+    let topic = decodeURIComponent('<%= encodeURIComponent(topic) %>');
+    let alphaName = 'Alpha';
+    let betaName = 'Beta';
     let history = [];
     let step = 0;
-    let rounds = OFFLINE_DEBATE_DATA.rounds;
-    let maxSteps = OFFLINE_DEBATE_DATA.rounds * 2;
+    let rounds = 3;
+    let maxSteps = 6; // 3 rounds (A, B, A, B, ...)
     let responseTimeout = null;
     const isModerator = !window.opener;
     const alphaTurns = document.getElementById('alphaTurns');
@@ -943,7 +906,9 @@
     const roundIndicator = document.getElementById('roundIndicator');
     const reflectionTurns = document.getElementById('reflectionTurns');
 
-    let subtopicsList = OFFLINE_DEBATE_DATA.subtopics;
+    // --- NEW VARIABLE TO STORE SUBTOPICS ---
+    let subtopicsList = [];
+    // --- END NEW VARIABLE ---
 
     // Onboarding modal logic
     const onboardingModal = document.getElementById('onboardingModal');
@@ -955,6 +920,7 @@
         onboardingModal.style.display = 'none';
         localStorage.setItem('aiDebateOnboarded', '1');
     });
+
     const params = new URLSearchParams(window.location.search);
     let sessionId;
 
@@ -986,20 +952,25 @@
         betaStatusSpan.classList.toggle('status-connected', betaReady);
         betaStatusSpan.dataset.connected = betaReady;
 
-        if (step > 0) {
-            startBtn.disabled = true;
+         if (step > 0) {
+        // If the debate is already in progress, keep the Start button disabled.
+        startBtn.disabled = true;
+        // The status will be handled by the turn-based fetchStep function.
         } else {
+            // Only if the debate has not started, check for readiness.
             if (alphaReady && betaReady) {
                 startBtn.disabled = false;
                 setDebateStatus('Ready to begin! Click "Start Debate" to begin.');
             } else {
+                // Keep the button disabled if not all debaters are connected.
                 startBtn.disabled = true;
                 setDebateStatus('Waiting for all debaters to connect...');
             }
         }
     });
 
-   socket.on('turnDone', ({ role }) => {
+    socket.on('turnDone', ({ role }) => {
+        // Check if the received 'role' matches the expected speaker for this step
         const isAlphaTurn = step % 2 === 0;
         const expectedRole = isAlphaTurn ? 'alpha' : 'beta';
 
@@ -1008,6 +979,7 @@
             clearTimeout(responseTimeout);
             handleTurnComplete();
         } else {
+            // If the wrong debater finishes early, log and ignore the signal
             console.log(`⚠️ Received early turnDone from ${role}. Ignoring.`);
         }
     });
@@ -1066,14 +1038,34 @@
         document.getElementById('betaAvatarGif').style.display = 'none';
         const explanationDiv = document.getElementById('topicExplanation');
         explanationDiv.style.display = 'block';
-        
-        // --- OFFLINE LOGIC: Use pre-defined explanation
-        explanationDiv.textContent = OFFLINE_DEBATE_DATA.topicExplanation;
-        speak(OFFLINE_DEBATE_DATA.topicExplanation);
-        // --- END OFFLINE LOGIC ---
+        explanationDiv.textContent = 'Loading topic explanation...';
+        try {
+            const res = await fetch('/ai-debate/explain', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({ topic })
+            });
+            const data = await res.json();
+            if (data && data.explanation) {
+                explanationDiv.textContent = data.explanation;
+                if ('speechSynthesis' in window) {
+                    const utter = new SpeechSynthesisUtterance(data.explanation);
+                    utter.rate = 1;
+                    utter.pitch = 1;
+                    utter.lang = 'en-US';
+                    utter.onend = function() {};
+                    utter.onerror = function() {};
+                    window.speechSynthesis.speak(utter);
+                }
+            } else {
+                explanationDiv.textContent = 'Could not fetch topic explanation.';
+            }
+        } catch (err) {
+            explanationDiv.textContent = 'Could not fetch topic explanation.';
+        }
     });
 
-     async function handleTurnComplete() {
+    async function handleTurnComplete() {
         if (isTurnProcessing) {
             return;
         }
@@ -1081,6 +1073,7 @@
         step++;
         updateRoundIndicator();
         if (step < maxSteps && !stopped) {
+            // Set the lock to false before starting the next turn
             isTurnProcessing = false;
             setTimeout(fetchStep, 500);
         } else {
@@ -1089,50 +1082,49 @@
             topicInput.disabled = false;
             startBtn.disabled = true;
             stopBtn.disabled = true;
-            
-            // --- OFFLINE LOGIC: Use pre-defined winner
-            showWinner();
-            // --- END OFFLINE LOGIC ---
-
+            getDebateWinner();
             alphaDebater.classList.remove('speaking');
             betaDebater.classList.remove('speaking');
             updateRoundIndicator();
-            isTurnProcessing = false;
+            isTurnProcessing = false; 
         }
     }
 
     // This function is now called once at the start of the debate
     async function fetchAllSubtopics(mainTopic) {
-        return OFFLINE_DEBATE_DATA.subtopics;
+        try {
+            const res = await fetch('/ai-debate/subtopics', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({ topic: mainTopic, num_subtopics: rounds }),
+            });
+            const data = await res.json();
+            return data.subtopics || [];
+        } catch (e) {
+            console.error('Error fetching subtopics:', e);
+            return [];
+        }
     }
 
     // These two functions are no longer needed
     // function handleSubtopicChoice(selected) { ... }
     // function showSubtopicModal(subtopics) { ... }
 
-     function setDebateStatus(text) {
+    function setDebateStatus(text) {
         statusDiv.textContent = text;
     }
 
     function showLoader(show, label) {
-            centerLoader.style.display = show ? 'flex' : 'none';
-            loaderLabel.textContent = label || 'AI is thinking...';
-        }
-
+        centerLoader.style.display = show ? 'flex' : 'none';
+        loaderLabel.textContent = label || 'AI is thinking...';
+    }
 
     function showWinner() {
-        // --- OFFLINE LOGIC: Use pre-defined winner data
-        winnerBox.textContent = `🏆 Winner: ${OFFLINE_DEBATE_DATA.winner.name}`;
+        const winner = Math.random() < 0.5 ? `🏆 Winner: ${alphaName} (Pro)` : `🏆 Winner: ${betaName} (Con)`;
+        winnerBox.textContent = winner;
         winnerBox.style.display = 'block';
         playSound('winner');
         launchConfetti();
-        document.getElementById('winnerModalTitle').textContent = `🏆 Winner: ${OFFLINE_DEBATE_DATA.winner.name}`;
-        document.getElementById('winnerModalReason').textContent = OFFLINE_DEBATE_DATA.winner.reason ? `Why: ${OFFLINE_DEBATE_DATA.winner.reason}` : '';
-        document.getElementById('winnerModal').style.display = 'flex';
-        document.getElementById('closeWinnerModal').onclick = function() {
-            document.getElementById('winnerModal').style.display = 'none';
-        };
-        // --- END OFFLINE LOGIC ---
     }
 
     function setSpeakingDebater(isAlpha) {
@@ -1167,6 +1159,7 @@
         if ('speechSynthesis' in window) {
             window.speechSynthesis.cancel();
             const utterance = new SpeechSynthesisUtterance(text);
+            
             utterance.rate = 1;
             utterance.pitch = 1;
             utterance.lang = 'en-US';
@@ -1182,8 +1175,10 @@
                     callback();
                 }
             };
+
             window.speechSynthesis.speak(utterance);
         } else {
+            // Fallback for browsers without speech synthesis
             if (callback) {
                 callback();
             }
@@ -1215,20 +1210,25 @@
         const isAlpha = step % 2 === 0;
         const speakerName = isAlpha ? alphaName : betaName;
 
+        // A single, asynchronous function to manage the turn sequence
         const startTurnSequence = () => {
+            // Step 1: Announce the new topic if it's the start of a round.
             if (step % 2 === 0) {
                 setDebateStatus(`Round ${currentTopicIndex + 1}: ${currentTopic}`);
                 speak(`The topic for this round is: ${currentTopic}`, () => {
+                    // Step 2 (Callback): Announce who is speaking.
                     speak(announceSpeaker(isAlpha), () => {
+                        // Step 3 (Callback): Emit the startTurn event to the debater.
                         socket.emit('startTurn', {
                             sessionId: sessionId,
                             role: isAlpha ? 'alpha' : 'beta',
-                            text: history[step]?.content || '',
+                            text: history[step]?.content || '', // Use history to prevent race condition
                             name: speakerName
                         });
                     });
                 });
             } else {
+                // If it's not the start of a round (i.e., Beta's turn), just announce the speaker and start the turn.
                 speak(announceSpeaker(isAlpha), () => {
                     socket.emit('startTurn', {
                         sessionId: sessionId,
@@ -1239,37 +1239,81 @@
                 });
             }
         };
-
-        // --- OFFLINE LOGIC: Use pre-defined transcript instead of an API call
+        
+        // You now need to get the response from your AI *before* you start the speaking sequence
         setDebateStatus((isAlpha ? alphaName : betaName) + ' is thinking...');
         setSpeakingDebater(isAlpha);
         showLoader(true, (isAlpha ? alphaName : betaName) + ' is thinking...');
         updateRoundIndicator();
 
-        const data = { text: OFFLINE_DEBATE_DATA.transcript[step] };
+        const res = await fetch('/ai-debate/step', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ topic, history, step, alphaName, betaName, rounds })
+        });
+        const data = await res.json();
         showLoader(false);
-
+        
         if (data && data.text) {
             console.log('Debate turn text:', data.text);
             history.push({ role: 'assistant', content: data.text });
             broadcastStateUpdate();
             const progress = Math.min((step + 1) / maxSteps, 1);
             document.getElementById('debateProgressBar').style.width = (progress * 100) + '%';
+            
+            // Call the sequence after the data is ready
             startTurnSequence();
         } else {
             setDebateStatus('Error: Could not get response.');
             startBtn.disabled = false;
             stopBtn.disabled = true;
-            showWinner();
+            getDebateWinner();
             alphaDebater.classList.remove('speaking');
             betaDebater.classList.remove('speaking');
             updateRoundIndicator();
         }
-        // --- END OFFLINE LOGIC ---
     }
 
     async function getDebateWinner() {
-        return OFFLINE_DEBATE_DATA.winner;
+        try {
+            const res = await fetch('/ai-debate/judge', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({
+                    alphaName,
+                    betaName,
+                    transcript: history.map(h => h.content),
+                    topic
+                })
+            });
+            const data = await res.json();
+            if (data && data.winner) {
+                winnerBox.textContent = `🏆 Winner: ${data.winner}`;
+                winnerBox.style.display = 'block';
+                playSound('winner');
+                launchConfetti();
+                document.getElementById('winnerModalTitle').textContent = `🏆 Winner: ${data.winner}`;
+                document.getElementById('winnerModalReason').textContent = data.reason ? `Why: ${data.reason}` : '';
+                let ratingsHtml = '';
+                if (data.ratings) {
+                    ratingsHtml = 'Ratings:';
+                    for (const [name, rating] of Object.entries(data.ratings)) {
+                        ratingsHtml += `<br><span style='color:#fff;'>${name}:</span> ${rating}`;
+                    }
+                }
+                document.getElementById('winnerModalRatings').innerHTML = ratingsHtml;
+                document.getElementById('winnerModal').style.display = 'flex';
+                document.getElementById('closeWinnerModal').onclick = function() {
+                    document.getElementById('winnerModal').style.display = 'none';
+                };
+            } else {
+                winnerBox.textContent = '🏆 Winner: Could not determine.';
+                winnerBox.style.display = 'block';
+            }
+        } catch (e) {
+            winnerBox.textContent = '🏆 Winner: Could not determine.';
+            winnerBox.style.display = 'block';
+        }
     }
 
     function openAlpha() {
@@ -1602,10 +1646,6 @@
         setTimeout(() => {
             status.textContent = status.dataset.connected === 'true' ? `✅ ${capitalize(role)} connected` : '❌ Not connected';
         }, 1500);
-    }
-
-    function capitalize(word) {
-        return word.charAt(0).toUpperCase() + word.slice(1);
     }
 
     function capitalize(word) {
