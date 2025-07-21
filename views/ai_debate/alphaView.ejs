@@ -503,7 +503,7 @@ socket.on('startTurn', (data) => {
     }
 });
 socket.on('roleTaken', ({ role }) => {
-    if (role === 'beta') {
+    if (role === 'alpha') {
         const statusSpan = document.getElementById('betaStatus') || document.createElement('div');
         statusSpan.textContent = '❌ Role already taken. Please open a different session link.';
         startBtn.disabled = false;
@@ -559,10 +559,6 @@ function playTurn(text, speakerName) {
     socket.emit('turnDone', { sessionId, role: 'alpha' });
   }
 }
-
-
-
-
 
 // window.addEventListener('message', function(event) {
 //   if (event.data.type === 'alphaTurns') {

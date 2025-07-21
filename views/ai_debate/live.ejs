@@ -905,6 +905,7 @@
     let stopped = false;
     const roundIndicator = document.getElementById('roundIndicator');
     const reflectionTurns = document.getElementById('reflectionTurns');
+    let isDebateActive = false;
 
     // --- NEW VARIABLE TO STORE SUBTOPICS ---
     let subtopicsList = [];
@@ -946,25 +947,42 @@
 
         alphaStatusSpan.textContent = alphaReady ? '✅ Connected' : '❌ Not connected';
         alphaStatusSpan.classList.toggle('status-connected', alphaReady);
-        alphaStatusSpan.dataset.connected = alphaReady;
-
         betaStatusSpan.textContent = betaReady ? '✅ Connected' : '❌ Not connected';
         betaStatusSpan.classList.toggle('status-connected', betaReady);
-        betaStatusSpan.dataset.connected = betaReady;
 
-         if (step > 0) {
-        // If the debate is already in progress, keep the Start button disabled.
-        startBtn.disabled = true;
-        // The status will be handled by the turn-based fetchStep function.
-        } else {
-            // Only if the debate has not started, check for readiness.
-            if (alphaReady && betaReady) {
-                startBtn.disabled = false;
-                setDebateStatus('Ready to begin! Click "Start Debate" to begin.');
+        // If the debate has started, check for disconnection to pause.
+        if (step > 0) {
+            if (!alphaReady || !betaReady) {
+                isDebatePaused = true;
+                isTurnProcessing = false; // Release the lock
+                setDebateStatus('Debate paused. Waiting for all debaters to reconnect.');
+                startBtn.textContent = 'Resume Debate';
+                startBtn.disabled = true; // Still disabled until they both reconnect
+                stopBtn.disabled = false;
             } else {
-                // Keep the button disabled if not all debaters are connected.
-                startBtn.disabled = true;
+                // Both are connected. If the debate was paused, we can now resume.
+                if (isDebatePaused) {
+                    setDebateStatus('All debaters reconnected. Click "Resume Debate" to continue.');
+                    startBtn.textContent = 'Resume Debate';
+                    startBtn.disabled = false;
+                    stopBtn.disabled = false;
+                } else {
+                    // The debate is already active, just keep the button disabled.
+                    startBtn.disabled = true;
+                    stopBtn.disabled = false;
+                }
+            }
+        } else {
+            // Debate has not started yet.
+            if (alphaReady && betaReady) {
+                setDebateStatus('Ready to begin! Click "Start Debate" to begin.');
+                startBtn.textContent = 'Start Debate';
+                startBtn.disabled = false;
+            } else {
                 setDebateStatus('Waiting for all debaters to connect...');
+                startBtn.textContent = 'Start Debate';
+                startBtn.disabled = true;
+                stopBtn.disabled = true;
             }
         }
     });
@@ -1196,83 +1214,76 @@
     }
 
     async function fetchStep() {
-        if (stopped) return;
+    if (!isDebateActive || stopped) {
+        return;
+    }
 
-        const currentTopicIndex = Math.floor(step / 2);
-        const currentTopic = subtopicsList[currentTopicIndex];
+    const currentTopicIndex = Math.floor(step / 2);
+    const currentTopic = subtopicsList[currentTopicIndex];
 
-        if (!currentTopic) {
-            console.error("No subtopic found for this round. Ending debate.");
-            handleTurnComplete();
-            return;
-        }
+    if (!currentTopic) {
+        console.error("No subtopic found for this round. Ending debate.");
+        handleTurnComplete();
+        return;
+    }
 
-        const isAlpha = step % 2 === 0;
-        const speakerName = isAlpha ? alphaName : betaName;
+    const isAlpha = step % 2 === 0;
+    const speakerName = isAlpha ? alphaName : betaName;
 
-        // A single, asynchronous function to manage the turn sequence
-        const startTurnSequence = () => {
-            // Step 1: Announce the new topic if it's the start of a round.
-            if (step % 2 === 0) {
-                setDebateStatus(`Round ${currentTopicIndex + 1}: ${currentTopic}`);
-                speak(`The topic for this round is: ${currentTopic}`, () => {
-                    // Step 2 (Callback): Announce who is speaking.
-                    speak(announceSpeaker(isAlpha), () => {
-                        // Step 3 (Callback): Emit the startTurn event to the debater.
-                        socket.emit('startTurn', {
-                            sessionId: sessionId,
-                            role: isAlpha ? 'alpha' : 'beta',
-                            text: history[step]?.content || '', // Use history to prevent race condition
-                            name: speakerName
-                        });
-                    });
-                });
-            } else {
-                // If it's not the start of a round (i.e., Beta's turn), just announce the speaker and start the turn.
-                speak(announceSpeaker(isAlpha), () => {
-                    socket.emit('startTurn', {
-                        sessionId: sessionId,
-                        role: isAlpha ? 'alpha' : 'beta',
-                        text: history[step]?.content || '',
-                        name: speakerName
-                    });
-                });
-            }
-        };
-        
-        // You now need to get the response from your AI *before* you start the speaking sequence
-        setDebateStatus((isAlpha ? alphaName : betaName) + ' is thinking...');
-        setSpeakingDebater(isAlpha);
-        showLoader(true, (isAlpha ? alphaName : betaName) + ' is thinking...');
-        updateRoundIndicator();
+    setDebateStatus(`${speakerName} is preparing...`);
+    setSpeakingDebater(isAlpha);
+    showLoader(true, `${speakerName} is preparing...`);
+    updateRoundIndicator();
 
+    // ✅ This "if" check is the "marker" you asked for.
+    // If history[step] already exists, this entire block is skipped.
+    if (!history[step]) {
+        console.log(`Generating NEW text for step ${step}.`);
         const res = await fetch('/ai-debate/step', {
             method: 'POST',
             headers: { 'Content-Type': 'application/json' },
             body: JSON.stringify({ topic, history, step, alphaName, betaName, rounds })
         });
         const data = await res.json();
-        showLoader(false);
         
         if (data && data.text) {
-            console.log('Debate turn text:', data.text);
+            // ✅ CHANGED: The role is now correctly set to 'alpha' or 'beta'.
+            const role = isAlpha ? 'alpha' : 'beta';
             history.push({ role: 'assistant', content: data.text });
             broadcastStateUpdate();
-            const progress = Math.min((step + 1) / maxSteps, 1);
-            document.getElementById('debateProgressBar').style.width = (progress * 100) + '%';
-            
-            // Call the sequence after the data is ready
-            startTurnSequence();
         } else {
-            setDebateStatus('Error: Could not get response.');
-            startBtn.disabled = false;
-            stopBtn.disabled = true;
-            getDebateWinner();
-            alphaDebater.classList.remove('speaking');
-            betaDebater.classList.remove('speaking');
-            updateRoundIndicator();
+            setDebateStatus('Error: Could not get response from AI.');
+            showLoader(false);
+            return;
         }
+    } else {
+        console.log(`RESUMING step ${step}. Text already exists.`);
     }
+
+    showLoader(false);
+    
+    const progress = Math.min((step + 1) / maxSteps, 1);
+    document.getElementById('debateProgressBar').style.width = `${progress * 100}%`;
+     const startTurnSequence = () => {
+        const announceSpeaker = (isAlpha) => isAlpha ? `Now your turn, ${alphaName}.` : `Now your turn, ${betaName}.`;
+        const turnText = history[step]?.content || '';
+
+        if (step % 2 === 0) { // It's Alpha's turn (start of a round)
+            setDebateStatus(`Round ${currentTopicIndex + 1}: ${currentTopic}`);
+            speak(`The topic for this round is: ${currentTopic}`, () => {
+                speak(announceSpeaker(isAlpha), () => {
+                    socket.emit('startTurn', { sessionId, role: 'alpha', text: turnText, name: alphaName });
+                });
+            });
+        } else { // It's Beta's turn
+            speak(announceSpeaker(isAlpha), () => {
+                socket.emit('startTurn', { sessionId, role: 'beta', text: turnText, name: betaName });
+            });
+        }
+    };
+    
+    startTurnSequence();
+}
 
     async function getDebateWinner() {
         try {
@@ -1330,50 +1341,45 @@
             return;
         }
 
-        const isRestart = (history.length === 0);
-
         startBtn.disabled = true;
         stopBtn.disabled = false;
+        isDebateActive = true;
 
-        if (isRestart) {
+        // Is this a new debate?
+        if (history.length === 0) {
+            // --- NEW DEBATE LOGIC ---
             alphaTurns.innerHTML = '';
             betaTurns.innerHTML = '';
             winnerBox.style.display = 'none';
             history = [];
             step = 0;
+            stopped = false;
+            isDebatePaused = false; // Ensure pause state is reset
+            reflectionTurns.innerHTML = '';
+
+            topicInput.disabled = true;
+            rounds = parseInt(document.getElementById('roundsInput').value) || 3;
+            maxSteps = rounds * 2;
+            document.getElementById('topicExplanation').style.display = 'none';
+            
+            setDebateStatus('Generating subtopics...');
+            subtopicsList = await fetchAllSubtopics(topic);
+            if (subtopicsList.length === 0) {
+                setDebateStatus('Could not generate subtopics. Ending debate.');
+                startBtn.disabled = false;
+                stopBtn.disabled = true;
+                return;
+            }
+            setDebateStatus('Subtopics generated. Debate beginning...');
+            
+        } else {
+            // --- RESUME DEBATE LOGIC ---
+            isDebatePaused = false;
+            setDebateStatus(`Resuming debate...`);
         }
-
-        stopped = false;
-        setDebateStatus('');
-        document.getElementById('debateProgressBar').style.width = `${(step / (rounds * 2)) * 100}%`;
-        updateRoundIndicator();
-        reflectionTurns.innerHTML = '';
-
-        document.getElementById('topicExplanation').style.display = 'none';
-        document.getElementById('alphaAvatarIcon').style.display = 'block';
-        document.getElementById('alphaAvatarGif').style.display = 'none';
-        document.getElementById('betaAvatarIcon').style.display = 'block';
-        document.getElementById('betaAvatarGif').style.display = 'none';
-
-        rounds = parseInt(document.getElementById('roundsInput').value) || 3;
-        maxSteps = rounds * 2;
-        topicInput.disabled = true;
-
-        // --- NEW LOGIC TO GENERATE ALL SUBTOPICS AT THE START ---
-        setDebateStatus('Generating subtopics...');
-        subtopicsList = await fetchAllSubtopics(topic);
-        if (subtopicsList.length === 0) {
-            setDebateStatus('Could not generate subtopics. Ending debate.');
-            startBtn.disabled = false;
-            stopBtn.disabled = true;
-            return;
-        }
-        setDebateStatus('Subtopics generated. Debate beginning...');
-        // --- END NEW LOGIC ---
 
         fetchStep();
     });
-
     stopBtn.addEventListener('click', function() {
         stopped = true;
         setDebateStatus('Debate stopped.');
@@ -1418,6 +1424,7 @@
         setDebateStatus('Debate reset. Ready to begin a new one.');
         localStorage.removeItem('sessionId');
         sessionId = null;
+        isDebateActive = false;
     });
 
     topicInput.setAttribute('aria-label', 'Debate topic');
@@ -1612,40 +1619,30 @@
     });
 
     function broadcastStateUpdate() {
-        socket.emit('updateState', {
-            sessionId,
-            data: {
-                topic,
-                alphaName,
-                betaName,
-                rounds,
-                maxSteps,
-                step,
-                history
-            }
-        });
+        const stateData = {
+            topic,
+            alphaName,
+            betaName,
+            rounds,
+            maxSteps,
+            step,
+            history,
+            isDebateActive
+        };
+        // The server should listen for 'updateState' and broadcast 'sessionState' to all clients
+        socket.emit('updateState', { sessionId, data: stateData });
     }
 
     function copyLink(role) {
-        const input = role === 'alpha'
-            ? document.getElementById('alphaLink')
-            : document.getElementById('betaLink');
-
+        const input = document.getElementById(role + 'Link');
         navigator.clipboard.writeText(input.value).then(() => {
             const status = document.getElementById(role + 'Status');
+            const originalText = status.textContent;
             status.textContent = '✅ Link copied!';
             setTimeout(() => {
-                status.textContent = status.dataset.connected === 'true' ? `✅ ${capitalize(role)} connected` : '❌ Not connected';
+                status.textContent = originalText;
             }, 1500);
         });
-        input.setSelectionRange(0, 99999);
-        document.execCommand('copy');
-
-        const status = document.getElementById(role + 'Status');
-        status.textContent = '✅ Link copied!';
-        setTimeout(() => {
-            status.textContent = status.dataset.connected === 'true' ? `✅ ${capitalize(role)} connected` : '❌ Not connected';
-        }, 1500);
     }
 
     function capitalize(word) {

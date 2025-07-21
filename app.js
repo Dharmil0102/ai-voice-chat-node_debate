@@ -58,10 +58,11 @@ io.on('connection', (socket) => {
       sessionStates[sessionId] = {
         alphaReady: false,
         betaReady: false,
+        alphaSocketId: null, // Add this
+        betaSocketId: null,  // Add this
       };
     }
     
-    // Add the socket's session ID to the socket object for easier cleanup on disconnect
     socket.sessionId = sessionId;
     
     socket.join(sessionId);
@@ -77,7 +78,8 @@ io.on('connection', (socket) => {
       socket.emit('roleTaken', { role: 'alpha' });
     } else {
       sessionStates[sessionId].alphaReady = true;
-      socket.alphaId = socket.id; // Store the ID of the connected Alpha
+      // ✅ Store the socket ID in the shared session state
+      sessionStates[sessionId].alphaSocketId = socket.id;
       io.to(sessionId).emit('statusUpdate', sessionStates[sessionId]);
       console.log(`Client ${socket.id} is now Alpha in session ${sessionId}.`);
     }
@@ -90,7 +92,8 @@ io.on('connection', (socket) => {
       socket.emit('roleTaken', { role: 'beta' });
     } else {
       sessionStates[sessionId].betaReady = true;
-      socket.betaId = socket.id; // Store the ID of the connected Beta
+      // ✅ Store the socket ID in the shared session state
+      sessionStates[sessionId].betaSocketId = socket.id;
       io.to(sessionId).emit('statusUpdate', sessionStates[sessionId]);
       console.log(`Client ${socket.id} is now Beta in session ${sessionId}.`);
     }
@@ -104,8 +107,12 @@ io.on('connection', (socket) => {
 
   // Reset session on moderator request
   socket.on('resetSession', (sessionId) => {
-    sessionStates[sessionId] = { alphaReady: false, betaReady: false };
-    sessions[sessionId] = {};
+    if (sessionStates[sessionId]) {
+      sessionStates[sessionId] = { alphaReady: false, betaReady: false, alphaSocketId: null, betaSocketId: null };
+    }
+    if (sessions[sessionId]) {
+      sessions[sessionId] = {};
+    }
     io.to(sessionId).emit('statusUpdate', sessionStates[sessionId]);
   });
 
@@ -116,21 +123,26 @@ io.on('connection', (socket) => {
     io.to(sessionId).emit('startTurn', { role, text, name });
   });
 
+  // ✅ CORRECTED DISCONNECT HANDLER
   socket.on('disconnect', () => {
     console.log('Socket disconnected:', socket.id);
     const sessionId = socket.sessionId;
     if (sessionId && sessionStates[sessionId]) {
-      if (socket.id === socket.alphaId) {
+      // ✅ Check against the ID stored in the session state
+      if (socket.id === sessionStates[sessionId].alphaSocketId) {
+        console.log(`Alpha player disconnected from session ${sessionId}.`);
         sessionStates[sessionId].alphaReady = false;
+        sessionStates[sessionId].alphaSocketId = null; // Clean up the ID
         io.to(sessionId).emit('statusUpdate', sessionStates[sessionId]);
-      } else if (socket.id === socket.betaId) {
+      } else if (socket.id === sessionStates[sessionId].betaSocketId) {
+        console.log(`Beta player disconnected from session ${sessionId}.`);
         sessionStates[sessionId].betaReady = false;
+        sessionStates[sessionId].betaSocketId = null; // Clean up the ID
         io.to(sessionId).emit('statusUpdate', sessionStates[sessionId]);
       }
     }
   });
 });
-
 
 // 🔥 Start the server
 server.listen(port, () => {
