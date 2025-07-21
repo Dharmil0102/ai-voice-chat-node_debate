@@ -396,23 +396,44 @@ const socket = io();
 
 // Voice loading
 function loadVoicesAndAssign() {
-  const voices = speechSynthesis.getVoices();
+    const voices = speechSynthesis.getVoices();
 
-  if (voices.length > 0) {
-    voicesLoaded = true;
+    if (voices.length > 0) {
+        voicesLoaded = true;
 
-    const femaleVoices = voices.filter(v =>
-      /female|zira|samantha|karen|victoria|sofia|susan|eva/.test(v.name.toLowerCase())
-    );
+        // --- NEW LOGIC FOR PRIORITIZED FALLBACK ---
+        // 1. Create a prioritized list of preferred female voices
+        const preferredVoices = [
+            "samantha", "zira", "karen", "susan", "eva", 
+            "victoria", "sofia", "laura", "heather", "tracy",
+            "audrey", "lucy", "rachel", "hazel"
+        ];
 
-    selectedVoice = femaleVoices.length > 0
-      ? femaleVoices[Math.floor(Math.random() * femaleVoices.length)]
-      : voices[Math.floor(Math.random() * voices.length)];
+        let foundVoice = null;
 
-    console.log('🎤 Assigned Beta voice:', selectedVoice.name);
-  } else {
-    speechSynthesis.onvoiceschanged = loadVoicesAndAssign;
-  }
+        // 2. Loop through the preferred voices and assign the first one found
+        for (const name of preferredVoices) {
+            const match = voices.find(v => v.name.toLowerCase().includes(name));
+            if (match) {
+                foundVoice = match;
+                break; // Stop the loop once a voice is found
+            }
+        }
+
+        // 3. Assign the found voice or fall back to any female voice
+        if (foundVoice) {
+            selectedVoice = foundVoice;
+        } else {
+            // Fallback to any female voice if no preferred ones are available
+            const anyFemaleVoice = voices.find(v => v.name.toLowerCase().includes("female"));
+            selectedVoice = anyFemaleVoice || voices[Math.floor(Math.random() * voices.length)];
+        }
+        // --- END NEW LOGIC ---
+
+        console.log('🎤 Assigned Beta voice:', selectedVoice.name);
+    } else {
+        speechSynthesis.onvoiceschanged = loadVoicesAndAssign;
+    }
 }
 
 // Start button
