@@ -381,8 +381,6 @@
   <button class="autoplay-btn" id="startDebateBtn">Join Debate</button>
   <script src="/socket.io/socket.io.js"></script>
   <script>
-  let selectedVoice = null;
-let voicesLoaded = false;
 
 // Constants
 const isBetaView = true;
@@ -394,57 +392,8 @@ const sessionId = new URLSearchParams(window.location.search).get('session');
 // Socket setup
 const socket = io();
 
-// Voice loading
-function loadVoicesAndAssign() {
-    const voices = speechSynthesis.getVoices();
-
-    if (voices.length > 0) {
-        voicesLoaded = true;
-
-        // --- NEW LOGIC FOR PRIORITIZED FALLBACK ---
-        // 1. Create a prioritized list of preferred female voices
-        const preferredVoices = [
-            "samantha", "zira", "karen", "susan", "eva", 
-            "victoria", "sofia", "laura", "heather", "tracy",
-            "audrey", "lucy", "rachel", "hazel"
-        ];
-
-        let foundVoice = null;
-
-        // 2. Loop through the preferred voices and assign the first one found
-        for (const name of preferredVoices) {
-            const match = voices.find(v => v.name.toLowerCase().includes(name));
-            if (match) {
-                foundVoice = match;
-                break; // Stop the loop once a voice is found
-            }
-        }
-
-        // 3. Assign the found voice or fall back to any female voice
-        if (foundVoice) {
-            selectedVoice = foundVoice;
-        } else {
-            // Fallback to any female voice if no preferred ones are available
-            const anyFemaleVoice = voices.find(v => v.name.toLowerCase().includes("female"));
-            selectedVoice = anyFemaleVoice || voices[Math.floor(Math.random() * voices.length)];
-        }
-        // --- END NEW LOGIC ---
-
-        console.log('🎤 Assigned Beta voice:', selectedVoice.name);
-    } else {
-        speechSynthesis.onvoiceschanged = loadVoicesAndAssign;
-    }
-}
-
 // Start button
 startBtn.addEventListener('click', () => {
-  if ('speechSynthesis' in window && !speechSynthesis.speaking) {
-    speechSynthesis.speak(new SpeechSynthesisUtterance(''));
-  }
-
-  if (!voicesLoaded) {
-    loadVoicesAndAssign();
-  }
   
   socket.emit('joinSession', sessionId);
   console.log('🔵 Emitting BetaReady for session:', sessionId);
@@ -456,15 +405,6 @@ startBtn.addEventListener('click', () => {
   startBtn.style.opacity = 0.5;
   startBtn.style.display = 'none';
 });
-
-// Listen to messages from live
-// window.addEventListener('message', (event) => {
-//   const { type, text, betaName } = event.data;
-//   if (type === 'betaTurn') {
-//     console.log('📨 Received betaTurn via postMessage:', text);
-//     playTurn(text, betaName || myName);
-//   }
-// });
 
 // Restore past turns
 socket.on('sessionState', (data) => {
@@ -490,31 +430,19 @@ socket.on('roleTaken', ({ role }) => {
         startBtn.style.display = 'block';
     }
 });
-// Listen for session updates
-// socket.on('sessionUpdated', (data) => {
-//   const last = data.history?.[data.history.length - 1];
-//   const lastIndex = data.history.length - 1;
-
-//   const isMyTurn = (lastIndex % 2 === 1);
-//   if (isMyTurn && last?.content) {
-//     const alreadySpoken = Array.from(myTurnsContainer.children).some(div =>
-//       div.textContent.includes(last.content)
-//     );
-//     if (!alreadySpoken) {
-//       playTurn(last.content, myName);
-//     }
-//   }
-// });
 
 socket.on('startTurn', (data) => {
     if (data.role === 'beta') {
-        console.log('📨 Received beta turn via socket:', data.text);
-        playTurn(data.text, data.name || myName);
+        console.log('📨 Received alpha turn via socket:', data.text);
+        console.log('BETA CLIENT RECEIVED:', data);
+        // Pass the voiceId from the data object to playTurn
+        playTurn(data.text, data.name || myName, data.voiceId);
     }
 });
 
 // Voice + animation playback
-function playTurn(text, speakerName) {
+
+async function playTurn(text, speakerName, voiceId) {
   const container = document.getElementById('betaTurns');
   const debater = document.getElementById('betaDebater');
   const avatarIcon = document.getElementById('betaAvatarIcon');
@@ -529,88 +457,47 @@ function playTurn(text, speakerName) {
   debater?.classList.add('speaking');
   avatarIcon?.style.setProperty('display', 'none');
   avatarGif?.style.setProperty('display', 'block');
+  
+   if (!voiceId) {
+      console.error("No voice ID provided for this turn.");
+      // Fallback to ensure the debate continues
+      socket.emit('turnDone', { sessionId, role: 'beta' });
+      return;
+  }
 
-  // Speak using voice synthesis
-  if ('speechSynthesis' in window) {
-    function speakOnceReady() {
-      if (!selectedVoice) return setTimeout(speakOnceReady, 100);
-      if (speechSynthesis.speaking) return setTimeout(speakOnceReady, 100);
+  try {
+    // FIXED: The correct path is '/ai-debate/speak'
+    const response = await fetch('/ai-debate/speak', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      // Use the voiceId from the function argument
+      body: JSON.stringify({ text: text, voiceId: voiceId }),
+    });
 
-      const utter = new SpeechSynthesisUtterance(text);
-      utter.voice = selectedVoice;
-      utter.rate = 1;
-      utter.pitch = 1;
-      utter.lang = 'en-US';
+    if (!response.ok) throw new Error(`Server error: ${response.status}`);
 
-      utter.onend = () => {
-        debater?.classList.remove('speaking');
-        avatarIcon?.style.setProperty('display', 'block');
-        avatarGif?.style.setProperty('display', 'none');
-        socket.emit('turnDone', { sessionId, role: 'beta' });
-      };
+    const audioBlob = await response.blob();
+    const audioUrl = URL.createObjectURL(audioBlob);
+    const audio = new Audio(audioUrl);
+    audio.play();
 
-      speechSynthesis.speak(utter);
-    }
+    audio.onended = () => {
+      debater?.classList.remove('speaking');
+      avatarIcon?.style.setProperty('display', 'block');
+      avatarGif?.style.setProperty('display', 'none');
+      URL.revokeObjectURL(audioUrl);
+      socket.emit('turnDone', { sessionId, role: 'beta' });
+    };
 
-    speakOnceReady();
-  } else {
+  } catch (error) {
+    console.error("Error playing ElevenLabs audio:", error);
+    // Fallback
+    debater?.classList.remove('speaking');
+    avatarIcon?.style.setProperty('display', 'block');
+    avatarGif?.style.setProperty('display', 'none');
     socket.emit('turnDone', { sessionId, role: 'beta' });
   }
 }
-
-
-
-// window.addEventListener('message', function(event) {
-//   if (event.data.type === 'betaTurn') {
-//     const { text, betaName } = event.data;
-
-//     // UI: Show the text
-//     const div = document.createElement('div');
-//     div.className = 'debate-turn';
-//     div.innerHTML = `<strong>${betaName}:</strong> ${text}`;
-//     document.getElementById('betaTurns')?.appendChild(div);
-//     const container = document.getElementById('betaTurns');
-//     container.scrollTop = container.scrollHeight;
-
-
-//     // UI: Show Beta is speaking
-//     document.getElementById('betaDebater')?.classList.add('speaking');
-//     document.getElementById('betaAvatarIcon')?.style.setProperty('display', 'none');
-//     document.getElementById('betaAvatarGif')?.style.setProperty('display', 'block');
-
-//     // Voice
-//     if ('speechSynthesis' in window) {
-//       const utter = new SpeechSynthesisUtterance(text);
-//       utter.rate = 1;
-//       utter.pitch = 1;
-//       utter.lang = 'en-US';
-
-//       const voices = speechSynthesis.getVoices();
-//       let betaVoice = voices.find(v => v.name.toLowerCase().includes('emma'));
-//       if (!betaVoice) betaVoice = voices.find(v => v.lang === 'en-GB' && v.name.toLowerCase().includes('female'));
-//       if (!betaVoice) betaVoice = voices.find(v => v.lang.startsWith('en')) || voices[0];
-//       utter.voice = betaVoice;
-
-//       utter.onend = () => {
-//         // Reset speaking glow and GIFs
-//         document.getElementById('betaDebater')?.classList.remove('speaking');
-//         document.getElementById('betaAvatarIcon')?.style.setProperty('display', 'block');
-//         document.getElementById('betaAvatarGif')?.style.setProperty('display', 'none');
-
-//         // Notify main window
-//         if (window.opener) {
-//           window.opener.postMessage({ type: 'betaDone' }, '*');
-//         }
-//       };
-
-//       window.speechSynthesis.speak(utter);
-//     } else {
-//       if (window.opener) {
-//         window.opener.postMessage({ type: 'betaDone' }, '*');
-//       }
-//     }
-//   }
-// });
 </script>
 </body>
 </html>

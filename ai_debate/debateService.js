@@ -90,10 +90,10 @@ async function judgeDebate(alphaName, betaName, transcript, topic) {
   return { winner: '', reason: '', ratings: { [alphaName]: '', [betaName]: '' } };
 }
 
-async function explainTopic(topic) {
-  const prompt = `Explain the following debate topic in 1 short, simple sentence for a general audience.\n\nTopic: ${topic}\n\nExplanation:`;
-  const response = await getOpenAIResponse(prompt, []);
-  return response;
-}
+// async function explainTopic(topic) {
+//   const prompt = `Explain the following debate topic in 1 short, simple sentence for a general audience.\n\nTopic: ${topic}\n\nExplanation:`;
+//   const response = await getOpenAIResponse(prompt, []);
+//   return response;
+// }
 
-module.exports = { getDebateStep, judgeDebate, explainTopic, generateSubtopics };
+module.exports = { getDebateStep, judgeDebate, generateSubtopics };

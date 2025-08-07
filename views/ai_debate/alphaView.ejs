@@ -380,8 +380,6 @@
       <button class="autoplay-btn" id="startDebateBtn">Join Debate</button>
       <script src="/socket.io/socket.io.js"></script>
       <script>
-let selectedVoice = null;
-let voicesLoaded = false;
 
 // Constants
 const myName = 'Alpha';
@@ -392,57 +390,8 @@ const sessionId = new URLSearchParams(window.location.search).get('session');
 // Socket setup
 const socket = io();
 
-// Voice loading (triggered on join only)
-function loadVoicesAndAssign() {
-    const voices = speechSynthesis.getVoices();
-    if (voices.length > 0) {
-        voicesLoaded = true;
-
-        // --- NEW LOGIC FOR PRIORITIZED FALLBACK ---
-        // 1. Create a prioritized list of preferred male voices
-        const preferredVoices = [
-            "alex", "daniel", "mark", "david", "paul",
-            "george", "michael", "fred", "ryan", "steve"
-        ];
-
-        let foundVoice = null;
-
-        // 2. Loop through the preferred voices and assign the first one found
-        for (const name of preferredVoices) {
-            const match = voices.find(v => v.name.toLowerCase().includes(name));
-            if (match) {
-                foundVoice = match;
-                break; // Stop the loop once a voice is found
-            }
-        }
-
-        // 3. Assign the found voice or fall back to any male voice
-        if (foundVoice) {
-            selectedVoice = foundVoice;
-        } else {
-            // Fallback to any male voice if no preferred ones are available
-            const anyMaleVoice = voices.find(v => v.name.toLowerCase().includes("male"));
-            selectedVoice = anyMaleVoice || voices[Math.floor(Math.random() * voices.length)];
-        }
-        // --- END NEW LOGIC ---
-
-        console.log('🎤 Assigned Alpha voice:', selectedVoice.name);
-    } else {
-        // If voices aren't loaded yet, try again when they are.
-        speechSynthesis.onvoiceschanged = loadVoicesAndAssign;
-    }
-}
-
 // Start button logic
 startBtn.addEventListener('click', function handleJoinClick() {
-  if ('speechSynthesis' in window && !speechSynthesis.speaking) {
-    // Force browser to load voices
-    speechSynthesis.speak(new SpeechSynthesisUtterance(''));
-  }
-
-  if (!voicesLoaded) {
-    loadVoicesAndAssign();
-  }
   
   socket.emit('joinSession', sessionId);
   // Emit alphaReady once
@@ -456,15 +405,6 @@ startBtn.addEventListener('click', function handleJoinClick() {
   startBtn.style.opacity = 0.5;
   startBtn.style.display = 'none';
 });
-
-// Listen for postMessage from live
-// window.addEventListener('message', (event) => {
-//   const { type, text, betaName } = event.data;
-//   if (type === 'alphaTurn') {
-//     console.log('📨 Received alphaTurn via postMessage:', text);
-//     playTurn(text, betaName || myName);
-//   }
-// });
 
 // Load past Alpha turns on session restore
 socket.on('sessionState', (data) => {
@@ -481,27 +421,15 @@ socket.on('sessionState', (data) => {
   }
 });
 
-// Listen for new turns from live
-// socket.on('sessionUpdated', (data) => {
-//   const last = data.history?.[data.history.length - 1];
-//   const lastIndex = data.history.length - 1;
-
-//   const isMyTurn = (lastIndex % 2 === 0); // Alpha = even
-//   if (isMyTurn && last?.content) {
-//     const alreadySpoken = Array.from(myTurnsContainer.children).some(div =>
-//       div.textContent.includes(last.content)
-//     );
-//     if (!alreadySpoken) {
-//       playTurn(last.content, myName);
-//     }
-//   }
-// });
 socket.on('startTurn', (data) => {
     if (data.role === 'alpha') {
         console.log('📨 Received alpha turn via socket:', data.text);
-        playTurn(data.text, data.name || myName);
+        console.log('ALPHA CLIENT RECEIVED:', data);
+        // Pass the voiceId from the data object to playTurn
+        playTurn(data.text, data.name || myName, data.voiceId);
     }
 });
+
 socket.on('roleTaken', ({ role }) => {
     if (role === 'alpha') {
         const statusSpan = document.getElementById('betaStatus') || document.createElement('div');
@@ -513,7 +441,7 @@ socket.on('roleTaken', ({ role }) => {
     }
 });
 // Speak + animate
-function playTurn(text, speakerName) {
+async function playTurn(text, speakerName, voiceId) {
   const container = document.getElementById('alphaTurns');
   const debater = document.getElementById('alphaDebater');
   const avatarIcon = document.getElementById('alphaAvatarIcon');
@@ -528,90 +456,46 @@ function playTurn(text, speakerName) {
   debater?.classList.add('speaking');
   avatarIcon?.style.setProperty('display', 'none');
   avatarGif?.style.setProperty('display', 'block');
-  
-  // Voice
-  if ('speechSynthesis' in window) {
-    function speakOnceReady() {
-      if (!selectedVoice) {
-        setTimeout(speakOnceReady, 100);
-        return;
-      }
+  if (!voiceId) {
+      console.error("No voice ID provided for this turn.");
+      // Fallback to ensure the debate continues
+      socket.emit('turnDone', { sessionId, role: 'alpha' });
+      return;
+  }
 
-      const utter = new SpeechSynthesisUtterance(text);
-      utter.rate = 1;
-      utter.pitch = 1;
-      utter.lang = 'en-US';
-      utter.voice = selectedVoice;
+  try {
+    const response = await fetch('/ai-debate/speak', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      // Use the voiceId from the function argument
+      body: JSON.stringify({ text: text, voiceId: voiceId }),
+    });
 
-      utter.onend = () => {
-        debater?.classList.remove('speaking');
-        avatarIcon?.style.setProperty('display', 'block');
-        avatarGif?.style.setProperty('display', 'none');
-        socket.emit('turnDone', { sessionId, role: 'alpha' });
-      };
+    if (!response.ok) throw new Error(`Server error: ${response.status}`);
 
-      speechSynthesis.speak(utter);
-    }
+    const audioBlob = await response.blob();
+    const audioUrl = URL.createObjectURL(audioBlob);
+    const audio = new Audio(audioUrl);
+    audio.play();
 
-    speakOnceReady();
-  } else {
-    // Fallback: skip voice
+    audio.onended = () => {
+      debater?.classList.remove('speaking');
+      avatarIcon?.style.setProperty('display', 'block');
+      avatarGif?.style.setProperty('display', 'none');
+      URL.revokeObjectURL(audioUrl); // Clean up memory
+      socket.emit('turnDone', { sessionId, role: 'alpha' });
+    };
+
+  } catch (error) {
+    console.error("Error playing ElevenLabs audio:", error);
+    // Fallback: If audio fails, ensure the debate can continue
+    debater?.classList.remove('speaking');
+    avatarIcon?.style.setProperty('display', 'block');
+    avatarGif?.style.setProperty('display', 'none');
     socket.emit('turnDone', { sessionId, role: 'alpha' });
   }
 }
-
-// window.addEventListener('message', function(event) {
-//   if (event.data.type === 'alphaTurns') {
-//     const { text, alphaName } = event.data;
-
-//     // UI: Show the text
-//     const div = document.createElement('div');
-//     div.className = 'debate-turn';
-//     div.innerHTML = `<strong>${alphaName}:</strong> ${text}`;
-//     document.getElementById('alphaTurns')?.appendChild(div);
-//     const container = document.getElementById('alphaTurns');
-//     container.scrollTop = container.scrollHeight;
-
-
-//     // UI: Show Alpha is speaking
-//     document.getElementById('alphaDebater')?.classList.add('speaking');
-//     document.getElementById('alphaAvatarIcon')?.style.setProperty('display', 'none');
-//     document.getElementById('alphaAvatarGif')?.style.setProperty('display', 'block');
-    
-//     // Voice
-//     if ('speechSynthesis' in window) {
-//       const utter = new SpeechSynthesisUtterance(text);
-//       utter.rate = 1;
-//       utter.pitch = 1;
-//       utter.lang = 'en-US';
-
-//       const voices = speechSynthesis.getVoices();
-//       let alphaVoice = voices.find(v => v.name.toLowerCase().includes('brian'));
-//       if (!alphaVoice) alphaVoice = voices.find(v => v.lang === 'en-GB' && v.name.toLowerCase().includes('male'));
-//       if (!alphaVoice) alphaVoice = voices.find(v => v.lang.startsWith('en')) || voices[0];
-//       utter.voice = alphaVoice;
-
-//       utter.onend = () => {
-//         // Reset speaking glow and GIFs
-//         document.getElementById('alphaDebater')?.classList.remove('speaking');
-//         document.getElementById('alphaAvatarIcon')?.style.setProperty('display', 'block');
-//         document.getElementById('alphaAvatarGif')?.style.setProperty('display', 'none');
-
-//         // Notify main window
-//         if (window.opener) {
-//           window.opener.postMessage({ type: 'alphaDone' }, '*');
-//         }
-//       };
-
-//       window.speechSynthesis.speak(utter);
-//     } else {
-//       if (window.opener) {
-//         window.opener.postMessage({ type: 'alphaDone' }, '*');
-//       }
-//     }
-//   }
-// });
-        
+ 
 </script>
     </body>
   </html>

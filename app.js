@@ -118,9 +118,13 @@ io.on('connection', (socket) => {
 
   // The moderator sends a turn command, and the server broadcasts it
   socket.on('startTurn', (data) => {
-    const { sessionId, role, text, name } = data;
-    console.log(`Received startTurn for ${role} in session ${sessionId}`);
-    io.to(sessionId).emit('startTurn', { role, text, name });
+    // We don't need to take the object apart.
+    // We can access the properties directly from 'data'.
+    console.log(`Received startTurn for ${data.role} in session ${data.sessionId}`);
+
+    // This is the FIX: Pass the ENTIRE original 'data' object.
+    // It already contains role, text, name, AND voiceId.
+    io.to(data.sessionId).emit('startTurn', data);
   });
 
   // ✅ CORRECTED DISCONNECT HANDLER

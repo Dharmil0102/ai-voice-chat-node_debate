@@ -1,11 +1,11 @@
 <!DOCTYPE html>
 <html>
 <head>
-    <title>GroBattle</title>
-    <meta name="description" content="A beautiful, interactive AI debate tool. Enter your own debater names and topic, and watch two AI agents battle it out in real time.">
-    <link rel="icon" type="image/png" href="https://cdn.jsdelivr.net/gh/twitter/twemoji@14.0.2/assets/72x72/1f916.png">
-    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;600;700&display=swap" rel="stylesheet">
-    <style>
+  <title>GroBattle</title>
+  <meta name="description" content="A beautiful, interactive AI debate tool. Enter your own debater names and topic, and watch two AI agents battle it out in real time.">
+  <link rel="icon" type="image/png" href="https://cdn.jsdelivr.net/gh/twitter/twemoji@14.0.2/assets/72x72/1f916.png">
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;600;700&display=swap" rel="stylesheet">
+  <style>
         .subtopic-btn {
             padding: 0.8em 1.2em;
             background: linear-gradient(90deg, #7c3aed 0%, #a78bfa 100%);
@@ -734,138 +734,155 @@
                 font-size: 0.9em;
             }
         }
-    </style>
+  </style>
 </head>
 <body>
-    <div id="welcomeBanner" style="display:none;position:fixed;top:0;left:0;width:100vw;z-index:100;background:linear-gradient(90deg,#7c3aed 0%,#a78bfa 100%);color:#fff;text-align:center;padding:1em 0;font-size:1.1em;font-weight:600;box-shadow:0 2px 16px #7c3aed33;letter-spacing:0.5px;">
-        Welcome to Debate. Experience a live, intelligent debate on any topic you choose.
-        <button id="closeWelcomeBanner" style="margin-left:1.5em;background:rgba(255,255,255,0.15);border:none;border-radius:16px;padding:0.3em 1.2em;color:#fff;font-weight:600;cursor:pointer;font-size:1em;">Dismiss</button>
-    </div>
-    <div id="welcomeGifContainer" style="display:none;position:fixed;top:24px;left:50%;transform:translateX(-50%);z-index:101;text-align:center;">
-        <img src="/images/voice_start.gif" alt="Welcome Voice Animation" style="width:90px;height:90px;border-radius:50%;box-shadow:0 2px 24px #a78bfa88;" />
-    </div>
-    <header class="ai-header">
-        <img src="/images/logo.jpg" alt="Gro Battle Logo" style="width:38px;height:38px;border-radius:50%;object-fit:cover;box-shadow:0 2px 8px #7c3aed44;margin-right:0.7em;vertical-align:middle;" />
-        <span class="ai-header-title">GroBattle</span>
-    </header>
-    <svg class="siri-bg-anim" viewBox="0 0 1440 220" fill="none" xmlns="http://www.w3.org/2000/svg">
-        <defs>
-            <linearGradient id="siriwave" x1="0" y1="0" x2="1440" y2="220" gradientUnits="userSpaceOnUse">
-                <stop stop-color="#a78bfa" stop-opacity="0.7"/>
-                <stop offset="1" stop-color="#7c3aed" stop-opacity="0.4"/>
-            </linearGradient>
-        </defs>
-        <path d="M0 180 Q 360 120 720 180 T 1440 180 V 220 H 0 Z" fill="url(#siriwave)">
-            <animate attributeName="d" dur="7s" repeatCount="indefinite"
-                values="M0 180 Q 360 120 720 180 T 1440 180 V 220 H 0 Z;
-                M0 200 Q 360 160 720 200 T 1440 200 V 220 H 0 Z;
-                M0 180 Q 360 120 720 180 T 1440 180 V 220 H 0 Z" />
-        </path>
-    </svg>
-    <div class="ai-container">
-        <div class="debate-progress-bar-container">
-            <div class="debate-progress-bar" id="debateProgressBar" style="width: 0%"></div>
-        </div>
-        <div id="topicExplanation" style="display:none;margin:0 auto 0.7em auto;max-width:700px;text-align:center;font-size:1.13em;color:#bdbdfc;background:rgba(60,60,90,0.5);border-radius:18px;padding:0.7em 1.2em;box-shadow:0 2px 12px #7c3aed22;"></div>
-        <form class="topic-form" id="topicForm">
-            <input type="text" id="alphaNameInput" placeholder="Alpha name..." required value="Alpha">
-            <input type="text" id="betaNameInput" placeholder="Beta name..." required value="Beta">
-            <input type="text" id="topicInput" placeholder="Enter debate topic..." required value="<%= topic %>">
-            <input type="number" id="roundsInput" placeholder="Rounds" min="1" max="10" value="3" required style="width: 90px; font-size: 1.1em; border-radius: 32px; border: none; outline: none; background: #23243a; color: #fff; font-weight: 500; padding: 0.7em 1.2em; text-align: center;">
-            <button type="submit">Set Topic</button>
-        </form>
-        
-        <h1 id="debateTitle">Gro Battle: <span id="alphaName">Alpha</span> vs <span id="betaName">Beta</span> — <span id="debateTopic"><%= topic %></span></h1>
-        <div class="debate-announcement"><span id="alphaName2">Alpha</span> vs <span id="betaName2">Beta</span> are battling</div>
-        <div class="debate-status" id="debateStatus"></div>
-        <div class="center-controls">
-            <button class="autoplay-btn" id="startDebateBtn">Start Debate</button>
-            <button class="stop-btn" id="stopDebateBtn" disabled>Stop Debate</button>
-            <button id="resetDebateBtn" aria-label="Reset Debate">🔄 Reset</button>
-        </div>
-        <div id="onboardingModal" class="onboarding-modal" style="display: none;">
-            <div class="onboarding-content">
-                <h2>Welcome to GroBattle!</h2>
-                <p>Enter custom names and a topic, then click <b>Start Debate</b> to watch two AI agents battle it out in real time.<br><br>Click <b>Stop Debate</b> at any time, or scroll to review previous rounds.</p>
-                <button id="closeOnboardingBtn">Got it!</button>
-            </div>
-        </div>
-        <div class="debate-card">
-            <div class="round-indicator" id="roundIndicator">Round 1 of 3</div>
-            <div class="debate-battle">
-                <div class="debater" id="alphaDebater">
-                    <div class="avatar" title="AI Alpha" id="alphaAvatar">
-                        <span class="avatar-icon" id="alphaAvatarIcon">🤖</span>
-                        <img src="/images/voice_start.gif" id="alphaAvatarGif" class="avatar-gif" alt="Alpha speaking" style="display:none;width:64px;height:64px;border-radius:50%;object-fit:cover;" />
-                    </div>
-                    <h2 id="alphaTitle">Alpha (Pro)</h2>
-                    <div id="alphaTurns" class="debater-scroll"></div>
-                </div>
-                <div class="center-loader" id="centerLoader" style="display:none;">
-                    <div class="spinner"></div>
-                    <div class="loader-label" id="loaderLabel">AI is thinking... <span class="loader-dots"><span class="loader-dot"></span><span class="loader-dot"></span><span class="loader-dot"></span></span></div>
-                </div>
-                <div class="debater" id="betaDebater">
-                    <div class="avatar" title="AI Beta" id="betaAvatar">
-                        <span class="avatar-icon" id="betaAvatarIcon">🧑‍💼</span>
-                        <img src="/images/voice_start.gif" id="betaAvatarGif" class="avatar-gif" alt="Beta speaking" style="display:none;width:64px;height:64px;border-radius:50%;object-fit:cover;" />
-                    </div>
-                    <h2 id="betaTitle">Beta (Con)</h2>
-                    <div id="betaTurns" class="debater-scroll"></div>
-                </div>
-            </div>
-            <div id="reflectionTurns"></div>
-        </div>
-        <div id="viewLinks" style="margin-top: 1rem;">
-              <div style="margin: 1rem auto; max-width: 800px; display: flex; flex-direction: column; gap: 1.5em; padding: 1.5em; background: rgba(30, 30, 50, 0.7); border-radius: 24px; border: 2px solid #7c3aed55; box-shadow: 0 4px 24px #7c3aed33, 0 2px 12px #0002; backdrop-filter: blur(16px);">
-          <div class="debater-link-box">
-              <div class="debater-link-title">
-                  <span class="avatar-icon">🤖</span>
-                  <strong>Alpha View</strong>
-              </div>
-              <input type="text" id="alphaLink" readonly />
-              <div class="debater-link-buttons">
-                  <button class="subtopic-btn copy-btn" onclick="copyLink('alpha')">Copy Link</button>
-                  <button class="subtopic-btn open-btn" onclick="openAlpha()">Open View</button>
-              </div>
-              <span id="alphaStatus" class="debater-status-text">❌ Not connected</span>
-          </div>
-          <div class="debater-link-box">
-              <div class="debater-link-title">
-                  <span class="avatar-icon">🧑‍💼</span>
-                  <strong>Beta View</strong>
-              </div>
-              <input type="text" id="betaLink" readonly />
-              <div class="debater-link-buttons">
-                  <button class="subtopic-btn copy-btn" onclick="copyLink('beta')">Copy Link</button>
-                  <button class="subtopic-btn open-btn" onclick="openBeta()">Open View</button>
-              </div>
-              <span id="betaStatus" class="debater-status-text">❌ Not connected</span>
-          </div>
-        </div>
-        <div id="subtopicModal" style="display:none;position:fixed;top:0;left:0;width:100vw;height:100vh;z-index:200;background:rgba(30,30,50,0.85);backdrop-filter:blur(8px);align-items:center;justify-content:center;">
-            <div style="background:rgba(255,255,255,0.13);border-radius:24px;box-shadow:0 8px 32px #7c3aed33;padding:2.2em 2.2em 1.7em 2.2em;text-align:center;color:#fff;max-width:420px;margin:auto;position:relative;">
-                <h3 style="font-size:1.4em;font-weight:700;color:#a78bfa;margin-bottom:1em;text-shadow:0 2px 8px #7c3aed55;">Choose a Subtopic</h3>
-                <div id="subtopicList" style="display:flex;flex-direction:column;gap:0.8em;"></div>
-            </div>
-        </div>
-        <div class="winner-box" id="winnerBox" style="display:none;"></div>
-        <canvas class="confetti" id="confettiCanvas"></canvas>
-        <div id="winnerModal" style="display:none;position:fixed;top:0;left:0;width:100vw;height:100vh;z-index:200;background:rgba(30,30,50,0.85);backdrop-filter:blur(8px);align-items:center;justify-content:center;">
-            <div style="background:rgba(255,255,255,0.13);border-radius:24px;box-shadow:0 8px 32px #7c3aed33;padding:2.2em 2.2em 1.7em 2.2em;text-align:center;color:#fff;max-width:340px;margin:auto;position:relative;">
-                <img src='https://media.giphy.com/media/26ufnwz3wDUli7GU0/giphy.gif' alt='Confetti celebration' style='width:90px;height:90px;object-fit:contain;margin-bottom:0.5em;border-radius:18px;box-shadow:0 2px 16px #a78bfa55;'>
-                <div id="winnerModalTitle" style="font-size:1.5em;font-weight:700;color:#10b981;text-shadow:0 2px 8px #10b98133;letter-spacing:0.5px;margin-bottom:0.5em;"></div>
-                <div id="winnerModalReason" style="font-size:1.08em;color:#bdbdfc;margin-bottom:0.7em;"></div>
-                <div id="winnerModalRatings" style="font-size:1em;color:#a78bfa;margin-bottom:1.2em;"></div>
-                <button id="closeWinnerModal" style="padding:0.6em 2em;background:linear-gradient(90deg,#7c3aed 0%,#a78bfa 100%);color:#fff;border:none;border-radius:32px;font-size:1.1em;cursor:pointer;font-weight:700;box-shadow:0 2px 16px 0 #7c3aed33,0 1.5px 8px #0002;transition:background 0.2s,box-shadow 0.2s,transform 0.1s;letter-spacing:0.5px;">Close</button>
-            </div>
-        </div>
-    </div>
-    <footer class="ai-footer">Built By GroBro</footer>
-    <script src="/socket.io/socket.io.js"></script>
-    
-    <script>
+  <div id="welcomeBanner" style="display:none;position:fixed;top:0;left:0;width:100vw;z-index:100;background:linear-gradient(90deg,#7c3aed 0%,#a78bfa 100%);color:#fff;text-align:center;padding:1em 0;font-size:1.1em;font-weight:600;box-shadow:0 2px 16px #7c3aed33;letter-spacing:0.5px;">
+    Welcome to Debate. Experience a live, intelligent debate on any topic you choose.
+    <button id="closeWelcomeBanner" style="margin-left:1.5em;background:rgba(255,255,255,0.15);border:none;border-radius:16px;padding:0.3em 1.2em;color:#fff;font-weight:600;cursor:pointer;font-size:1em;">Dismiss</button>
+  </div>
+  <div id="welcomeGifContainer" style="display:none;position:fixed;top:24px;left:50%;transform:translateX(-50%);z-index:101;text-align:center;">
+    <img src="/images/voice_start.gif" alt="Welcome Voice Animation" style="width:90px;height:90px;border-radius:50%;box-shadow:0 2px 24px #a78bfa88;" />
+  </div>
+  <header class="ai-header">
+    <img src="/images/logo.jpg" alt="Gro Battle Logo" style="width:38px;height:38px;border-radius:50%;object-fit:cover;box-shadow:0 2px 8px #7c3aed44;margin-right:0.7em;vertical-align:middle;" />
+    <span class="ai-header-title">GroBattle</span>
+  </header>
+  <svg class="siri-bg-anim" viewBox="0 0 1440 220" fill="none" xmlns="http://www.w3.org/2000/svg">
+    <defs>
+      <linearGradient id="siriwave" x1="0" y1="0" x2="1440" y2="220" gradientUnits="userSpaceOnUse">
+        <stop stop-color="#a78bfa" stop-opacity="0.7"/>
+        <stop offset="1" stop-color="#7c3aed" stop-opacity="0.4"/>
+      </linearGradient>
+    </defs>
+    <path d="M0 180 Q 360 120 720 180 T 1440 180 V 220 H 0 Z" fill="url(#siriwave)">
+      <animate attributeName="d" dur="7s" repeatCount="indefinite"
+        values="M0 180 Q 360 120 720 180 T 1440 180 V 220 H 0 Z;
+        M0 200 Q 360 160 720 200 T 1440 200 V 220 H 0 Z;
+        M0 180 Q 360 120 720 180 T 1440 180 V 220 H 0 Z" />
+    </path>
+  </svg>
+  <div class="ai-container">
+    <div class="debate-progress-bar-container">
+      <div class="debate-progress-bar" id="debateProgressBar" style="width: 0%"></div>
+    </div>
+    <!-- <div id="topicExplanation" style="display:none;margin:0 auto 0.7em auto;max-width:700px;text-align:center;font-size:1.13em;color:#bdbdfc;background:rgba(60,60,90,0.5);border-radius:18px;padding:0.7em 1.2em;box-shadow:0 2px 12px #7c3aed22;"></div> -->
+    <form class="topic-form" id="topicForm">
+        <input type="text" id="alphaNameInput" placeholder="Alpha name..." required value="Alpha">
+        <div style="flex:1;">
+            <select id="alphaVoiceSelect" style="width:100%; padding: 0.7em 1.2em; font-size: 1.2em; border-radius: 32px; border: none; outline: none; background: #23243a; color: #fff; box-shadow: 0 1px 4px #0002; font-weight: 500;">
+            <option>Loading Alpha Voices...</option>
+            </select>
+        </div>
+
+        <input type="text" id="betaNameInput" placeholder="Beta name..." required value="Beta">
+        <div style="flex:1;">
+            <select id="betaVoiceSelect" style="width:100%; padding: 0.7em 1.2em; font-size: 1.2em; border-radius: 32px; border: none; outline: none; background: #23243a; color: #fff; box-shadow: 0 1px 4px #0002; font-weight: 500;">
+            <option>Loading Beta Voices...</option>
+            </select>
+        </div>
+
+        <input type="text" id="topicInput" placeholder="Enter debate topic..." required value="<%= topic %>">
+        <input type="number" id="roundsInput" placeholder="Rounds" min="1" max="10" value="3" required style="width: 90px; font-size: 1.1em; border-radius: 32px; border: none; outline: none; background: #23243a; color: #fff; font-weight: 500; padding: 0.7em 1.2em; text-align: center;">
+        <button type="submit">Set Topic</button>
+    </form>
+   
+    <h1 id="debateTitle">Gro Battle: <span id="alphaName">Alpha</span> vs <span id="betaName">Beta</span> — <span id="debateTopic"><%= topic %></span></h1>
+    <div class="debate-announcement"><span id="alphaName2">Alpha</span> vs <span id="betaName2">Beta</span> are battling</div>
+    <div class="debate-status" id="debateStatus"></div>
+    <div class="center-controls">
+      <button class="autoplay-btn" id="startDebateBtn" disabled>Loading Voices...</button>
+      <button class="stop-btn" id="stopDebateBtn" disabled>Stop Debate</button>
+      <button id="resetDebateBtn" aria-label="Reset Debate">🔄 Reset</button>
+    </div>
+    <div id="onboardingModal" class="onboarding-modal" style="display: none;">
+      <div class="onboarding-content">
+        <h2>Welcome to GroBattle!</h2>
+        <p>Enter custom names and a topic, then click <b>Start Debate</b> to watch two AI agents battle it out in real time.<br><br>Click <b>Stop Debate</b> at any time, or scroll to review previous rounds.</p>
+        <button id="closeOnboardingBtn">Got it!</button>
+      </div>
+    </div>
+    <div class="debate-card">
+      <div class="round-indicator" id="roundIndicator">Round 1 of 3</div>
+      <div class="debate-battle">
+        <div class="debater" id="alphaDebater">
+          <div class="avatar" title="AI Alpha" id="alphaAvatar">
+            <span class="avatar-icon" id="alphaAvatarIcon">🤖</span>
+            <img src="/images/voice_start.gif" id="alphaAvatarGif" class="avatar-gif" alt="Alpha speaking" style="display:none;width:64px;height:64px;border-radius:50%;object-fit:cover;" />
+          </div>
+          <h2 id="alphaTitle">Alpha (Pro)</h2>
+          <div id="alphaTurns" class="debater-scroll"></div>
+        </div>
+        <div class="center-loader" id="centerLoader" style="display:none;">
+          <div class="spinner"></div>
+          <div class="loader-label" id="loaderLabel">AI is thinking... <span class="loader-dots"><span class="loader-dot"></span><span class="loader-dot"></span><span class="loader-dot"></span></span></div>
+        </div>
+        <div class="debater" id="betaDebater">
+          <div class="avatar" title="AI Beta" id="betaAvatar">
+            <span class="avatar-icon" id="betaAvatarIcon">🧑‍💼</span>
+            <img src="/images/voice_start.gif" id="betaAvatarGif" class="avatar-gif" alt="Beta speaking" style="display:none;width:64px;height:64px;border-radius:50%;object-fit:cover;" />
+          </div>
+          <h2 id="betaTitle">Beta (Con)</h2>
+          <div id="betaTurns" class="debater-scroll"></div>
+        </div>
+      </div>
+      <div id="reflectionTurns"></div>
+    </div>
+    <div id="viewLinks" style="margin-top: 1rem;">
+       <div style="margin: 1rem auto; max-width: 800px; display: flex; flex-direction: column; gap: 1.5em; padding: 1.5em; background: rgba(30, 30, 50, 0.7); border-radius: 24px; border: 2px solid #7c3aed55; box-shadow: 0 4px 24px #7c3aed33, 0 2px 12px #0002; backdrop-filter: blur(16px);">
+     <div class="debater-link-box">
+       <div class="debater-link-title">
+         <span class="avatar-icon">🤖</span>
+         <strong>Alpha View</strong>
+       </div>
+       <input type="text" id="alphaLink" readonly />
+       <div class="debater-link-buttons">
+         <button class="subtopic-btn copy-btn" onclick="copyLink('alpha')">Copy Link</button>
+         <button class="subtopic-btn open-btn" onclick="openAlpha()">Open View</button>
+       </div>
+       <span id="alphaStatus" class="debater-status-text">❌ Not connected</span>
+     </div>
+     <div class="debater-link-box">
+       <div class="debater-link-title">
+         <span class="avatar-icon">🧑‍💼</span>
+         <strong>Beta View</strong>
+       </div>
+       <input type="text" id="betaLink" readonly />
+       <div class="debater-link-buttons">
+         <button class="subtopic-btn copy-btn" onclick="copyLink('beta')">Copy Link</button>
+         <button class="subtopic-btn open-btn" onclick="openBeta()">Open View</button>
+       </div>
+       <span id="betaStatus" class="debater-status-text">❌ Not connected</span>
+     </div>
+    </div>
+    <div id="subtopicModal" style="display:none;position:fixed;top:0;left:0;width:100vw;height:100vh;z-index:200;background:rgba(30,30,50,0.85);backdrop-filter:blur(8px);align-items:center;justify-content:center;">
+      <div style="background:rgba(255,255,255,0.13);border-radius:24px;box-shadow:0 8px 32px #7c3aed33;padding:2.2em 2.2em 1.7em 2.2em;text-align:center;color:#fff;max-width:420px;margin:auto;position:relative;">
+        <h3 style="font-size:1.4em;font-weight:700;color:#a78bfa;margin-bottom:1em;text-shadow:0 2px 8px #7c3aed55;">Choose a Subtopic</h3>
+        <div id="subtopicList" style="display:flex;flex-direction:column;gap:0.8em;"></div>
+      </div>
+    </div>
+    <div class="winner-box" id="winnerBox" style="display:none;"></div>
+    <canvas class="confetti" id="confettiCanvas"></canvas>
+    <div id="winnerModal" style="display:none;position:fixed;top:0;left:0;width:100vw;height:100vh;z-index:200;background:rgba(30,30,50,0.85);backdrop-filter:blur(8px);align-items:center;justify-content:center;">
+      <div style="background:rgba(255,255,255,0.13);border-radius:24px;box-shadow:0 8px 32px #7c3aed33;padding:2.2em 2.2em 1.7em 2.2em;text-align:center;color:#fff;max-width:340px;margin:auto;position:relative;">
+        <img src='https://media.giphy.com/media/26ufnwz3wDUli7GU0/giphy.gif' alt='Confetti celebration' style='width:90px;height:90px;object-fit:contain;margin-bottom:0.5em;border-radius:18px;box-shadow:0 2px 16px #a78bfa55;'>
+        <div id="winnerModalTitle" style="font-size:1.5em;font-weight:700;color:#10b981;text-shadow:0 2px 8px #10b98133;letter-spacing:0.5px;margin-bottom:0.5em;"></div>
+        <div id="winnerModalReason" style="font-size:1.08em;color:#bdbdfc;margin-bottom:0.7em;"></div>
+        <div id="winnerModalRatings" style="font-size:1em;color:#a78bfa;margin-bottom:1.2em;"></div>
+        <button id="closeWinnerModal" style="padding:0.6em 2em;background:linear-gradient(90deg,#7c3aed 0%,#a78bfa 100%);color:#fff;border:none;border-radius:32px;font-size:1.1em;cursor:pointer;font-weight:700;box-shadow:0 2px 16px 0 #7c3aed33,0 1.5px 8px #0002;transition:background 0.2s,box-shadow 0.2s,transform 0.1s;letter-spacing:0.5px;">Close</button>
+      </div>
+    </div>
+  </div>
+  <footer class="ai-footer">Built By GroBro</footer>
+  <script src="/socket.io/socket.io.js"></script>
+ 
+  <script>
     // Initialize variables
+    let selectedAlphaVoiceId = null;
+    let selectedBetaVoiceId = null;
+    let voicesAreLoaded = false;
+    const alphaVoiceSelect = document.getElementById('alphaVoiceSelect');
+    const betaVoiceSelect = document.getElementById('betaVoiceSelect');
     let isTurnProcessing = false;
     let newTopic = null; // This variable is no longer needed but kept for clarity.
     let topic = decodeURIComponent('<%= encodeURIComponent(topic) %>');
@@ -906,11 +923,74 @@
     const roundIndicator = document.getElementById('roundIndicator');
     const reflectionTurns = document.getElementById('reflectionTurns');
     let isDebateActive = false;
+    const MODERATOR_VOICE_ID = "WtA85syCrJwasGeHGH2p";
 
     // --- NEW VARIABLE TO STORE SUBTOPICS ---
     let subtopicsList = [];
     // --- END NEW VARIABLE ---
 
+    function checkReadyState() {
+        if (alphaReady && betaReady && voicesAreLoaded) {
+            startBtn.disabled = false;
+            startBtn.textContent = 'Start Debate';
+            setDebateStatus('Ready to begin! Click "Start Debate" to begin.');
+        }
+    }
+    async function populateVoiceSelectors() {
+  try {
+    const response = await fetch('/ai-debate/voices');
+    const voices = await response.json();
+
+    // Safety Check: Ensure voices were actually returned
+    if (!voices || voices.length === 0) {
+      throw new Error("No voices were returned from the API.");
+    }
+
+    alphaVoiceSelect.innerHTML = '';
+    betaVoiceSelect.innerHTML = '';
+
+    voices.forEach(voice => {
+      const option = document.createElement('option');
+      option.value = voice.voice_id;
+      option.textContent = voice.name;
+      alphaVoiceSelect.appendChild(option.cloneNode(true));
+      betaVoiceSelect.appendChild(option);
+    });
+
+    selectedAlphaVoiceId = voices[0].voice_id;
+    selectedBetaVoiceId = voices.length > 1 ? voices[1].voice_id : voices[0].voice_id;
+    
+    if (betaVoiceSelect.options.length > 1) {
+        betaVoiceSelect.selectedIndex = 1;
+    }
+
+    voicesAreLoaded = true;
+    checkReadyState();
+
+  } catch (error) {
+    console.error('Failed to load voices:', error);
+    alphaVoiceSelect.innerHTML = '<option>Error loading voices</option>';
+    betaVoiceSelect.innerHTML = '<option>Error loading voices</option>';
+    startBtn.textContent = 'Voice API Error';
+    startBtn.disabled = true; // Ensure button stays disabled on error
+  }
+}
+
+        // Add event listeners to update the voice ID when the user chooses
+        alphaVoiceSelect.addEventListener('change', (e) => {
+            selectedAlphaVoiceId = e.target.value;
+            // ADD THIS LINE TO DEBUG
+            console.log('✅ Alpha voice selected:', selectedAlphaVoiceId); 
+        });
+
+        betaVoiceSelect.addEventListener('change', (e) => {
+            selectedBetaVoiceId = e.target.value;
+            // ADD THIS LINE TO DEBUG
+            console.log('✅ Beta voice selected:', selectedBetaVoiceId);
+        });
+
+        // Call the function when the page loads
+        populateVoiceSelectors();
     // Onboarding modal logic
     const onboardingModal = document.getElementById('onboardingModal');
     const closeOnboardingBtn = document.getElementById('closeOnboardingBtn');
@@ -968,22 +1048,12 @@
                     stopBtn.disabled = false;
                 } else {
                     // The debate is already active, just keep the button disabled.
-                    startBtn.disabled = true;
+                    checkReadyState();
                     stopBtn.disabled = false;
                 }
             }
         } else {
-            // Debate has not started yet.
-            if (alphaReady && betaReady) {
-                setDebateStatus('Ready to begin! Click "Start Debate" to begin.');
-                startBtn.textContent = 'Start Debate';
-                startBtn.disabled = false;
-            } else {
-                setDebateStatus('Waiting for all debaters to connect...');
-                startBtn.textContent = 'Start Debate';
-                startBtn.disabled = true;
-                stopBtn.disabled = true;
-            }
+            checkReadyState(); 
         }
     });
 
@@ -1054,33 +1124,6 @@
         document.getElementById('alphaAvatarGif').style.display = 'none';
         document.getElementById('betaAvatarIcon').style.display = 'block';
         document.getElementById('betaAvatarGif').style.display = 'none';
-        const explanationDiv = document.getElementById('topicExplanation');
-        explanationDiv.style.display = 'block';
-        explanationDiv.textContent = 'Loading topic explanation...';
-        try {
-            const res = await fetch('/ai-debate/explain', {
-                method: 'POST',
-                headers: { 'Content-Type': 'application/json' },
-                body: JSON.stringify({ topic })
-            });
-            const data = await res.json();
-            if (data && data.explanation) {
-                explanationDiv.textContent = data.explanation;
-                if ('speechSynthesis' in window) {
-                    const utter = new SpeechSynthesisUtterance(data.explanation);
-                    utter.rate = 1;
-                    utter.pitch = 1;
-                    utter.lang = 'en-US';
-                    utter.onend = function() {};
-                    utter.onerror = function() {};
-                    window.speechSynthesis.speak(utter);
-                }
-            } else {
-                explanationDiv.textContent = 'Could not fetch topic explanation.';
-            }
-        } catch (err) {
-            explanationDiv.textContent = 'Could not fetch topic explanation.';
-        }
     });
 
     async function handleTurnComplete() {
@@ -1096,7 +1139,7 @@
             setTimeout(fetchStep, 500);
         } else {
             setDebateStatus('Debate finished!');
-            speak('The debate has concluded. The judge will now announce the winner.');
+            await speak('The debate has concluded. The judge will now announce the winner.', MODERATOR_VOICE_ID);
             topicInput.disabled = false;
             startBtn.disabled = true;
             stopBtn.disabled = true;
@@ -1149,7 +1192,7 @@
         if (isAlpha) {
             alphaDebater.classList.add('speaking');
             betaDebater.classList.remove('speaking');
-            playSound('turn');
+            
             document.getElementById('alphaAvatarIcon').style.display = 'none';
             document.getElementById('alphaAvatarGif').style.display = 'block';
             document.getElementById('betaAvatarIcon').style.display = 'block';
@@ -1157,7 +1200,7 @@
         } else {
             betaDebater.classList.add('speaking');
             alphaDebater.classList.remove('speaking');
-            playSound('turn');
+            
             document.getElementById('betaAvatarIcon').style.display = 'none';
             document.getElementById('betaAvatarGif').style.display = 'block';
             document.getElementById('alphaAvatarIcon').style.display = 'block';
@@ -1173,35 +1216,38 @@
         }
     }
 
-    function speak(text, callback) {
-        if ('speechSynthesis' in window) {
-            window.speechSynthesis.cancel();
-            const utterance = new SpeechSynthesisUtterance(text);
-            
-            utterance.rate = 1;
-            utterance.pitch = 1;
-            utterance.lang = 'en-US';
+    async function speak(text, voiceId) {
+        // If no text is provided, resolve immediately.
+        if (!text) return;
 
-            utterance.onend = () => {
-                if (callback) {
-                    callback();
-                }
-            };
-            utterance.onerror = () => {
-                console.error('Speech synthesis error.');
-                if (callback) {
-                    callback();
-                }
-            };
+        try {
+            const response = await fetch('/ai-debate/speak', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ text, voiceId }),
+            });
 
-            window.speechSynthesis.speak(utterance);
-        } else {
-            // Fallback for browsers without speech synthesis
-            if (callback) {
-                callback();
+            if (!response.ok) {
+            throw new Error(`Server responded with status ${response.status}`);
             }
+
+            const audioBlob = await response.blob();
+            const audioUrl = URL.createObjectURL(audioBlob);
+            const audio = new Audio(audioUrl);
+            
+            // Return a new Promise that resolves when the audio ends
+            return new Promise(resolve => {
+            audio.onended = () => {
+                URL.revokeObjectURL(audioUrl); // Clean up memory
+                resolve(); // Signal that speaking is complete
+            };
+            audio.play();
+            });
+
+        } catch (error) {
+            console.error("Error playing ElevenLabs audio for moderator:", error);
         }
-    }
+        }
 
     function updateRoundIndicator() {
         const currentRound = Math.floor(step / 2) + 1;
@@ -1264,23 +1310,36 @@
     
     const progress = Math.min((step + 1) / maxSteps, 1);
     document.getElementById('debateProgressBar').style.width = `${progress * 100}%`;
-     const startTurnSequence = () => {
-        const announceSpeaker = (isAlpha) => isAlpha ? `Now your turn, ${alphaName}.` : `Now your turn, ${betaName}.`;
+    const startTurnSequence = async () => {
+        const isAlpha = step % 2 === 0;
+        const speakerName = isAlpha ? alphaName : betaName;
+        const role = isAlpha ? 'alpha' : 'beta';
         const turnText = history[step]?.content || '';
 
-        if (step % 2 === 0) { // It's Alpha's turn (start of a round)
+        const announceSpeakerText = `Now your turn, ${speakerName}.`;
+
+        // Announce the topic only at the start of a new round
+        if (step % 2 === 0) {
+            const currentTopicIndex = Math.floor(step / 2);
+            const currentTopic = subtopicsList[currentTopicIndex];
             setDebateStatus(`Round ${currentTopicIndex + 1}: ${currentTopic}`);
-            speak(`The topic for this round is: ${currentTopic}`, () => {
-                speak(announceSpeaker(isAlpha), () => {
-                    socket.emit('startTurn', { sessionId, role: 'alpha', text: turnText, name: alphaName });
-                });
-            });
-        } else { // It's Beta's turn
-            speak(announceSpeaker(isAlpha), () => {
-                socket.emit('startTurn', { sessionId, role: 'beta', text: turnText, name: betaName });
-            });
+            await speak(`The topic for this round is: ${currentTopic}`, MODERATOR_VOICE_ID);
         }
-    };
+
+        // Announce the speaker
+        await speak(announceSpeakerText, MODERATOR_VOICE_ID);
+
+        // Get the correct voice ID based on whose turn it is
+        const voiceId = isAlpha ? selectedAlphaVoiceId : selectedBetaVoiceId;
+
+        // Create the final payload object that INCLUDES the voiceId
+        const payload = { sessionId, role, text: turnText, name: speakerName, voiceId };
+        
+        console.log('Moderator is sending this payload:', payload); // For debugging
+
+        // Emit the event with the complete payload
+        socket.emit('startTurn', payload);
+        };
     
     startTurnSequence();
 }
@@ -1360,7 +1419,6 @@
             topicInput.disabled = true;
             rounds = parseInt(document.getElementById('roundsInput').value) || 3;
             maxSteps = rounds * 2;
-            document.getElementById('topicExplanation').style.display = 'none';
             
             setDebateStatus('Generating subtopics...');
             subtopicsList = await fetchAllSubtopics(topic);
