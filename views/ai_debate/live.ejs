@@ -1008,7 +1008,7 @@
  
   <script>
     // Initialize variables
-    
+
     let selectedAlphaVoiceId = null;
     let selectedBetaVoiceId = null;
     let voicesAreLoaded = false;
@@ -1643,35 +1643,35 @@
     function hideWelcomeGif() {
         document.getElementById('welcomeGifContainer').style.display = 'none';
     }
-    function trySpeakWelcome() {
-        if ('speechSynthesis' in window && document.hasFocus()) {
-            try {
-                window.speechSynthesis.cancel();
-                const welcome = new SpeechSynthesisUtterance('Welcome to Debate. Experience a live, intelligent debate on any topic you choose.');
-                welcome.rate = 1;
-                welcome.pitch = 1;
-                welcome.lang = 'en-US';
-                showWelcomeGif();
-                window.speechSynthesis.speak(welcome);
-                welcome.onend = function() { hideWelcomeGif(); };
-                welcome.onerror = function() { showWelcomeBanner(); hideWelcomeGif(); };
-            } catch (e) {
-                showWelcomeBanner();
-                showWelcomeGif();
-                setTimeout(hideWelcomeGif, 3500);
-            }
-        } else {
-            showWelcomeBanner();
-            showWelcomeGif();
-            setTimeout(hideWelcomeGif, 3500);
-        }
-    }
+    // function trySpeakWelcome() {
+    //     if ('speechSynthesis' in window && document.hasFocus()) {
+    //         try {
+    //             window.speechSynthesis.cancel();
+    //             const welcome = new SpeechSynthesisUtterance('Welcome to Debate. Experience a live, intelligent debate on any topic you choose.');
+    //             welcome.rate = 1;
+    //             welcome.pitch = 1;
+    //             welcome.lang = 'en-US';
+    //             showWelcomeGif();
+    //             window.speechSynthesis.speak(welcome);
+    //             welcome.onend = function() { hideWelcomeGif(); };
+    //             welcome.onerror = function() { showWelcomeBanner(); hideWelcomeGif(); };
+    //         } catch (e) {
+    //             showWelcomeBanner();
+    //             showWelcomeGif();
+    //             setTimeout(hideWelcomeGif, 3500);
+    //         }
+    //     } else {
+    //         showWelcomeBanner();
+    //         showWelcomeGif();
+    //         setTimeout(hideWelcomeGif, 3500);
+    //     }
+    // }
 
     let welcomeSpoken = false;
     function speakWelcome() {
         if (welcomeSpoken) return;
         welcomeSpoken = true;
-        trySpeakWelcome();
+        // trySpeakWelcome();
         window.removeEventListener('click', speakWelcome);
         window.removeEventListener('keydown', speakWelcome);
         window.removeEventListener('focus', speakWelcome, true);
