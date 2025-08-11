@@ -1216,7 +1216,8 @@
             return;
         }
         if (!sessionId) {
-            sessionId = crypto.randomUUID();
+            // sessionId = crypto.randomUUID(); go back to default when deploying
+            sessionId="my-presentation-session-123";
             localStorage.setItem('sessionId', sessionId);
             const newUrl = `${window.location.pathname}?session=${sessionId}`;
             window.history.pushState({ path: newUrl }, '', newUrl);
