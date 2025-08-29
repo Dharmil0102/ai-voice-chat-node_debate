@@ -7,7 +7,7 @@ const proSystemPrompt = (name, topic) => `You are a debater named ${name}. Your 
 
 // Beta (Con) must argue that the topic IS NOT true.
 // The key is the instruction to directly discredit the opponent's argument.
-const conSystemPrompt = (name, topic) => `You are a debater named ${name}. Your sole purpose is to argue that the following statement is NOT true and NOT relevant: "${topic}". For each turn, you must FIRST directly discredit the last point made by your opponent. Then, you must present a new argument that proves your side. Your tone is combative, logical, and assertive. speak 5-6 lines atax`;
+const conSystemPrompt = (name, topic) => `You are a debater named ${name}. Your sole purpose is to argue that the following statement is NOT true and NOT relevant: "${topic}". For each turn, you must FIRST directly discredit the last point made by your opponent. Then, you must present a new argument that proves your side. Your tone is combative, logical, and assertive. speak 5-6 lines at max`;
 
 async function getOpenAIResponse(systemPrompt, history) {
   try {
