@@ -1,7 +1,7 @@
 <!DOCTYPE html>
 <html>
 <head>
-  <title>GroBattle</title>
+  <title>Gro Battle</title>
   <meta name="description" content="A beautiful, interactive AI debate tool. Enter your own debater names and topic, and watch two AI agents battle it out in real time.">
   <link rel="icon" type="image/png" href="https://cdn.jsdelivr.net/gh/twitter/twemoji@14.0.2/assets/72x72/1f916.png">
   <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;600;700&display=swap" rel="stylesheet">
@@ -836,7 +836,7 @@
   </div>
   <header class="ai-header">
     <img src="/images/logo.jpg" alt="Gro Battle Logo" style="width:38px;height:38px;border-radius:50%;object-fit:cover;box-shadow:0 2px 8px #7c3aed44;margin-right:0.7em;vertical-align:middle;" />
-    <span class="ai-header-title">GroBattle</span>
+    <span class="ai-header-title">Gro Battle</span>
   </header>
   <svg class="siri-bg-anim" viewBox="0 0 1440 220" fill="none" xmlns="http://www.w3.org/2000/svg">
     <defs>
@@ -1090,14 +1090,26 @@
             });
 
             // Set initial default voices
-            selectedAlphaVoiceId = voices[0].voice_id;
-            selectedBetaVoiceId = voices.length > 1 ? voices[1].voice_id : voices[0].voice_id;
-            selectedModeratorVoiceId = voices.length > 2 ? voices[2].voice_id : voices[0].voice_id;
+            // selectedAlphaVoiceId = voices[0].voice_id;
+            // selectedBetaVoiceId = voices.length > 1 ? voices[1].voice_id : voices[0].voice_id;
+            // selectedModeratorVoiceId = voices.length > 2 ? voices[2].voice_id : voices[0].voice_id;
             
             // Update the dropdowns to show the selected defaults
+            // betaVoiceSelect.value = selectedBetaVoiceId;
+            // moderatorVoiceSelect.value = selectedModeratorVoiceId;
+            const alphaDefault = voices.find(v => v.name.toLowerCase().includes('shashi tharoor'));
+            const betaDefault = voices.find(v => v.name.toLowerCase().includes('imran khan'));
+            const moderatorDefault = voices.find(v => v.name.toLowerCase().includes('sia'));
+
+            // Set the selected IDs, with fallbacks in case a voice isn't found
+            selectedAlphaVoiceId = alphaDefault ? alphaDefault.voice_id : voices[0].voice_id;
+            selectedBetaVoiceId = betaDefault ? betaDefault.voice_id : (voices.length > 1 ? voices[1].voice_id : voices[0].voice_id);
+            selectedModeratorVoiceId = moderatorDefault ? moderatorDefault.voice_id : (voices.length > 2 ? voices[2].voice_id : voices[0].voice_id);
+
+            // Update the dropdowns to display the new defaults
+            alphaVoiceSelect.value = selectedAlphaVoiceId;
             betaVoiceSelect.value = selectedBetaVoiceId;
             moderatorVoiceSelect.value = selectedModeratorVoiceId;
-
             voicesAreLoaded = true;
             checkReadyState();
 
