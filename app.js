@@ -27,9 +27,9 @@ app.use('/', indexRoutes);
 const debateRoutes = require('./ai_debate/debateRoutes');
 app.use('/ai-debate', debateRoutes);
 
-// --- 🔥 WebSocket session store ---
-const sessions = {};       // Debate content: sessionId => { topic, alphaName, ... }
-const sessionStates = {};  // Readiness: sessionId => { alphaReady, betaReady }
+// --- WebSocket session store ---
+const sessions = {};      // Debate content: sessionId => { topic, alphaName, ... }
+const sessionStates = {}; // Readiness: sessionId => { alphaReady, betaReady }
 
 io.on('connection', (socket) => {
   console.log('Socket connected:', socket.id);
@@ -44,8 +44,8 @@ io.on('connection', (socket) => {
     if (!sessions[sessionId]) {
       sessions[sessionId] = {
         topic: '',
-        alphaName: '',
-        betaName: '',
+        alphaName: 'Alpha', // Default name
+        betaName: 'Beta',   // Default name
         rounds: 3,
         maxSteps: 6,
         step: 0,
@@ -58,16 +58,30 @@ io.on('connection', (socket) => {
       sessionStates[sessionId] = {
         alphaReady: false,
         betaReady: false,
-        alphaSocketId: null, // Add this
-        betaSocketId: null,  // Add this
+        alphaSocketId: null,
+        betaSocketId: null,
       };
     }
     
     socket.sessionId = sessionId;
     
     socket.join(sessionId);
-    io.to(sessionId).emit('sessionState', sessions[sessionId]);
+    // Send the current state to the client that just joined
+    socket.emit('sessionState', sessions[sessionId]);
     console.log(`Client ${socket.id} joined session ${sessionId}.`);
+  });
+
+  // --- ⭐️ ADD THIS ENTIRE LISTENER ⭐️ ---
+  // This listens for updates from the moderator
+  socket.on('updateState', ({ sessionId, data }) => {
+    if (sessions[sessionId]) {
+      // Update the session data on the server
+      sessions[sessionId] = data;
+      console.log(`Session ${sessionId} was updated by the moderator.`);
+      
+      // Broadcast the updated data to ALL clients in the room (including Alpha/Beta)
+      io.to(sessionId).emit('sessionUpdated', data);
+    }
   });
 
   // Handle readiness with a check
@@ -78,7 +92,6 @@ io.on('connection', (socket) => {
       socket.emit('roleTaken', { role: 'alpha' });
     } else {
       sessionStates[sessionId].alphaReady = true;
-      // ✅ Store the socket ID in the shared session state
       sessionStates[sessionId].alphaSocketId = socket.id;
       io.to(sessionId).emit('statusUpdate', sessionStates[sessionId]);
       console.log(`Client ${socket.id} is now Alpha in session ${sessionId}.`);
@@ -92,7 +105,6 @@ io.on('connection', (socket) => {
       socket.emit('roleTaken', { role: 'beta' });
     } else {
       sessionStates[sessionId].betaReady = true;
-      // ✅ Store the socket ID in the shared session state
       sessionStates[sessionId].betaSocketId = socket.id;
       io.to(sessionId).emit('statusUpdate', sessionStates[sessionId]);
       console.log(`Client ${socket.id} is now Beta in session ${sessionId}.`);
@@ -118,39 +130,33 @@ io.on('connection', (socket) => {
 
   // The moderator sends a turn command, and the server broadcasts it
   socket.on('startTurn', (data) => {
-    // We don't need to take the object apart.
-    // We can access the properties directly from 'data'.
     console.log(`Received startTurn for ${data.role} in session ${data.sessionId}`);
-
-    // This is the FIX: Pass the ENTIRE original 'data' object.
-    // It already contains role, text, name, AND voiceId.
     io.to(data.sessionId).emit('startTurn', data);
   });
 
-  // ✅ CORRECTED DISCONNECT HANDLER
+  // Disconnect Handler
   socket.on('disconnect', () => {
     console.log('Socket disconnected:', socket.id);
     const sessionId = socket.sessionId;
     if (sessionId && sessionStates[sessionId]) {
-      // ✅ Check against the ID stored in the session state
       if (socket.id === sessionStates[sessionId].alphaSocketId) {
         console.log(`Alpha player disconnected from session ${sessionId}.`);
         sessionStates[sessionId].alphaReady = false;
-        sessionStates[sessionId].alphaSocketId = null; // Clean up the ID
+        sessionStates[sessionId].alphaSocketId = null;
         io.to(sessionId).emit('statusUpdate', sessionStates[sessionId]);
       } else if (socket.id === sessionStates[sessionId].betaSocketId) {
         console.log(`Beta player disconnected from session ${sessionId}.`);
         sessionStates[sessionId].betaReady = false;
-        sessionStates[sessionId].betaSocketId = null; // Clean up the ID
+        sessionStates[sessionId].betaSocketId = null;
         io.to(sessionId).emit('statusUpdate', sessionStates[sessionId]);
       }
     }
   });
 });
 
-// 🔥 Start the server
+// Start the server
 server.listen(port, () => {
-  console.log(`Server running at http://localhost:${port}`);
+  console.log(`Server running at http://localhost:${port}`);
 });
 
 module.exports = { server, io };

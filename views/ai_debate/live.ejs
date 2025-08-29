@@ -735,95 +735,84 @@
                 font-size: 0.9em;
             }
         }
-    .voice-select-wrapper {
-        flex: 1;
-        position: relative;
-        min-width: 180px;
+        .voice-select-wrapper {
+            flex: 1;
+            position: relative;
+            min-width: 180px;
+            }
+
+        .voice-select {
+            width: 100%;
+            padding: 0.7em 2.5em 0.7em 1.2em; /* Add padding for the arrow */
+            font-size: 1.2em;
+            border-radius: 32px;
+            border: none;
+            outline: none;
+            background-color: #23243a;
+            color: #fff;
+            box-shadow: 0 1px 4px #0002;
+            font-weight: 500;
+            cursor: pointer;
+            -webkit-appearance: none; /* Hide default arrow on Chrome/Safari */
+            -moz-appearance: none;   /* Hide default arrow on Firefox */
+            appearance: none;
+            /* Add custom arrow */
+            background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='16' height='16' fill='%23a78bfa' viewBox='0 0 16 16'%3E%3Cpath fill-rule='evenodd' d='M1.646 4.646a.5.5 0 0 1 .708 0L8 10.293l5.646-5.647a.5.5 0 0 1 .708.708l-6 6a.5.5 0 0 1-.708 0l-6-6a.5.5 0 0 1 0-.708z'/%3E%3C/svg%3E");
+            background-repeat: no-repeat;
+            background-position: right 1.2em center;
         }
-
-    .voice-select {
-        width: 100%;
-        padding: 0.7em 2.5em 0.7em 1.2em; /* Add padding for the arrow */
-        font-size: 1.2em;
-        border-radius: 32px;
-        border: none;
-        outline: none;
-        background-color: #23243a;
-        color: #fff;
-        box-shadow: 0 1px 4px #0002;
-        font-weight: 500;
-        cursor: pointer;
-        -webkit-appearance: none; /* Hide default arrow on Chrome/Safari */
-        -moz-appearance: none;    /* Hide default arrow on Firefox */
-        appearance: none;
-        /* Add custom arrow */
-        background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='16' height='16' fill='%23a78bfa' viewBox='0 0 16 16'%3E%3Cpath fill-rule='evenodd' d='M1.646 4.646a.5.5 0 0 1 .708 0L8 10.293l5.646-5.647a.5.5 0 0 1 .708.708l-6 6a.5.5 0 0 1-.708 0l-6-6a.5.5 0 0 1 0-.708z'/%3E%3C/svg%3E");
-        background-repeat: no-repeat;
-        background-position: right 1.2em center;
+        .setup-container {
+      display: flex;
+      flex-direction: column;
+      gap: 1.5rem;
+      max-width: 1000px;
+      margin: 1.5rem auto;
+      padding: 0 1rem;
     }
-    .setup-container {
-  display: flex;
-  flex-direction: column;
-  gap: 1.5rem;
-  max-width: 1000px;
-  margin: 1.5rem auto;
-  padding: 0 1rem;
-}
 
-.setup-group {
-  background: rgba(30, 30, 50, 0.5);
-  border: 2px solid #7c3aed55;
-  border-radius: 24px;
-  padding: 1.5rem;
-  backdrop-filter: blur(12px);
-  box-shadow: 0 4px 24px #7c3aed22;
-}
+    .setup-group {
+      background: rgba(30, 30, 50, 0.5);
+      border: 2px solid #7c3aed55;
+      border-radius: 24px;
+      padding: 1.5rem;
+      backdrop-filter: blur(12px);
+      box-shadow: 0 4px 24px #7c3aed22;
+    }
 
-.setup-group legend {
-  padding: 0.3em 0.8em;
-  font-size: 1.2em;
-  font-weight: 700;
-  letter-spacing: 1px;
-  color: #a78bfa;
-  background: linear-gradient(90deg, #7c3aed 0%, #a78bfa 100%);
-  border-radius: 32px;
-  box-shadow: 0 2px 16px #7c3aed33;
-}
+    .setup-group legend {
+      padding: 0.3em 0.8em;
+      font-size: 1.2em;
+      font-weight: 700;
+      letter-spacing: 1px;
+      color: #a78bfa;
+      background: linear-gradient(90deg, #7c3aed 0%, #a78bfa 100%);
+      border-radius: 32px;
+      box-shadow: 0 2px 16px #7c3aed33;
+    }
 
-.setup-grid {
-  display: grid;
-  grid-template-columns: repeat(2, 1fr);
-  gap: 1.5rem;
-  margin-top: 1rem;
-}
+    .setup-grid {
+      display: grid;
+      grid-template-columns: repeat(2, 1fr);
+      gap: 1.5rem;
+      margin-top: 1rem;
+    }
 
-.input-group {
-  display: flex;
-  flex-direction: column;
-  gap: 0.5rem;
-}
+    .input-group {
+      display: flex;
+      flex-direction: column;
+      gap: 0.5rem;
+    }
 
-.input-group label {
-  font-weight: 600;
-  color: #bdbdfc;
-  margin-left: 1rem;
-}
+    .input-group label {
+      font-weight: 600;
+      color: #bdbdfc;
+      margin-left: 1rem;
+    }
 
-/* Make the existing topic-form inputs fit the new design */
-.topic-form input, .voice-select-wrapper {
-  flex: 1; /* Allow them to fill the space */
-}
-
-/* Media query for mobile */
-@media (max-width: 768px) {
-  .setup-grid {
-    grid-template-columns: 1fr; /* Stack into a single column */
-  }
-  .topic-form {
-    flex-direction: column;
-    align-items: stretch; /* Make inputs full-width */
-  }
-}
+    /* Make the existing topic-form inputs fit the new design */
+    .topic-form input, .voice-select-wrapper {
+      flex: 1; /* Allow them to fill the space */
+    }
   </style>
 </head>
 <body>
@@ -916,7 +905,7 @@
         </div>
     </form>
     </div>
-   
+    
     <h1 id="debateTitle">Gro Battle: <span id="alphaName">Alpha</span> vs <span id="betaName">Beta</span> — <span id="debateTopic"><%= topic %></span></h1>
     <div class="debate-announcement"><span id="alphaName2">Alpha</span> vs <span id="betaName2">Beta</span> are battling</div>
     <div class="debate-status" id="debateStatus"></div>
@@ -960,30 +949,30 @@
     </div>
     <div id="viewLinks" style="margin-top: 1rem;">
        <div style="margin: 1rem auto; max-width: 800px; display: flex; flex-direction: column; gap: 1.5em; padding: 1.5em; background: rgba(30, 30, 50, 0.7); border-radius: 24px; border: 2px solid #7c3aed55; box-shadow: 0 4px 24px #7c3aed33, 0 2px 12px #0002; backdrop-filter: blur(16px);">
-     <div class="debater-link-box">
-       <div class="debater-link-title">
-         <span class="avatar-icon">🤖</span>
-         <strong>Alpha View</strong>
-       </div>
-       <input type="text" id="alphaLink" readonly />
-       <div class="debater-link-buttons">
-         <button class="subtopic-btn copy-btn" onclick="copyLink('alpha')">Copy Link</button>
-         <button class="subtopic-btn open-btn" onclick="openAlpha()">Open View</button>
-       </div>
-       <span id="alphaStatus" class="debater-status-text">❌ Not connected</span>
-     </div>
-     <div class="debater-link-box">
-       <div class="debater-link-title">
-         <span class="avatar-icon">🧑‍💼</span>
-         <strong>Beta View</strong>
-       </div>
-       <input type="text" id="betaLink" readonly />
-       <div class="debater-link-buttons">
-         <button class="subtopic-btn copy-btn" onclick="copyLink('beta')">Copy Link</button>
-         <button class="subtopic-btn open-btn" onclick="openBeta()">Open View</button>
-       </div>
-       <span id="betaStatus" class="debater-status-text">❌ Not connected</span>
-     </div>
+      <div class="debater-link-box">
+        <div class="debater-link-title">
+          <span class="avatar-icon">🤖</span>
+          <strong>Alpha View</strong>
+        </div>
+        <input type="text" id="alphaLink" readonly />
+        <div class="debater-link-buttons">
+          <button class="subtopic-btn copy-btn" onclick="copyLink('alpha')">Copy Link</button>
+          <button class="subtopic-btn open-btn" onclick="openAlpha()">Open View</button>
+        </div>
+        <span id="alphaStatus" class="debater-status-text">❌ Not connected</span>
+      </div>
+      <div class="debater-link-box">
+        <div class="debater-link-title">
+          <span class="avatar-icon">🧑‍💼</span>
+          <strong>Beta View</strong>
+        </div>
+        <input type="text" id="betaLink" readonly />
+        <div class="debater-link-buttons">
+          <button class="subtopic-btn copy-btn" onclick="copyLink('beta')">Copy Link</button>
+          <button class="subtopic-btn open-btn" onclick="openBeta()">Open View</button>
+        </div>
+        <span id="betaStatus" class="debater-status-text">❌ Not connected</span>
+      </div>
     </div>
     <div id="subtopicModal" style="display:none;position:fixed;top:0;left:0;width:100vw;height:100vh;z-index:200;background:rgba(30,30,50,0.85);backdrop-filter:blur(8px);align-items:center;justify-content:center;">
       <div style="background:rgba(255,255,255,0.13);border-radius:24px;box-shadow:0 8px 32px #7c3aed33;padding:2.2em 2.2em 1.7em 2.2em;text-align:center;color:#fff;max-width:420px;margin:auto;position:relative;">
@@ -1005,7 +994,7 @@
   </div>
   <footer class="ai-footer">Built By GroBro</footer>
   <script src="/socket.io/socket.io.js"></script>
- 
+
   <script>
     // Initialize variables
 
@@ -1665,7 +1654,7 @@
     //             welcome.lang = 'en-US';
     //             showWelcomeGif();
     //             window.speechSynthesis.speak(welcome);
-    //             welcome.onend = function() { hideWelcomeGif(); };
+    //             welcome.onended = function() { hideWelcomeGif(); };
     //             welcome.onerror = function() { showWelcomeBanner(); hideWelcomeGif(); };
     //         } catch (e) {
     //             showWelcomeBanner();

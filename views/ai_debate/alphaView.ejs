@@ -371,7 +371,8 @@
                 class="avatar-gif" alt="Alpha speaking"
                 style="display:none;width:64px;height:64px;border-radius:50%;object-fit:cover;" />
             </div>
-            <h2 id="alphaTitle">Sashi Tharoor</h2>
+            <!-- ⭐️ CHANGE: Use a placeholder title -->
+            <h2 id="alphaTitle">Alpha (Pro)</h2>
             <div id="alphaTurns" class="debater-scroll"></div>
           </div>
         </div>
@@ -406,15 +407,20 @@ startBtn.addEventListener('click', function handleJoinClick() {
   startBtn.style.display = 'none';
 });
 
-// Load past Alpha turns on session restore
+// ⭐️ UPDATED: This now handles BOTH initial join and live updates for the name
 socket.on('sessionState', (data) => {
+  if (data.alphaName) {
+    document.getElementById('alphaTitle').textContent = `${data.alphaName} (Pro)`;
+  }
   if (data.history && data.history.length > 0) {
+    myTurnsContainer.innerHTML = ''; // Clear existing turns to prevent duplicates
     data.history.forEach((h, i) => {
       const isMyTurn = (i % 2 === 0);
       if (isMyTurn) {
         const div = document.createElement('div');
         div.className = 'debate-turn';
-        div.innerHTML = `<strong>${myName}:</strong> ${h.content}`;
+        // Use the updated name in the turn history
+        div.innerHTML = `<strong>${data.alphaName || myName}:</strong> ${h.content}`;
         myTurnsContainer?.appendChild(div);
       }
     });
@@ -425,11 +431,16 @@ socket.on('startTurn', (data) => {
     if (data.role === 'alpha') {
         console.log('📨 Received alpha turn via socket:', data.text);
         console.log('ALPHA CLIENT RECEIVED:', data);
-        // Pass the voiceId from the data object to playTurn
         playTurn(data.text, data.name || myName, data.voiceId);
     }
 });
 
+// ⭐️ This listener is now redundant but harmless. The fix is in 'sessionState'
+socket.on('sessionUpdated', (data) => {
+  if (data.alphaName) {
+    document.getElementById('alphaTitle').textContent = `${data.alphaName} (Pro)`;
+  }
+});
 socket.on('roleTaken', ({ role }) => {
     if (role === 'alpha') {
         const statusSpan = document.getElementById('betaStatus') || document.createElement('div');
@@ -467,7 +478,6 @@ async function playTurn(text, speakerName, voiceId) {
     const response = await fetch('/ai-debate/speak', {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
-      // Use the voiceId from the function argument
       body: JSON.stringify({ text: text, voiceId: voiceId }),
     });
 
@@ -495,7 +505,6 @@ async function playTurn(text, speakerName, voiceId) {
     socket.emit('turnDone', { sessionId, role: 'alpha' });
   }
 }
- 
 </script>
     </body>
   </html>
